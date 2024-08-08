@@ -7,6 +7,7 @@
 | <a href="https://github.com/seungh1024"><img width="100px" src="https://github.com/seungh1024.png" /></a> | <a href="https://github.com/i960107"><img width="100px" src="https://github.com/i960107.png" /></a> | <a href="https://github.com/KoKimSS"><img width="100px" src="https://github.com/KoKimSS.png" /></a> | <a href="https://github.com/kariskan"><img width="100px" src="https://github.com/kariskan.png" /></a> |
 
 </div>
+<a href= "https://stupendous-nasturtium-0c1.notion.site/7-Team6-Drive-6e79817bc0ec495499193f9aa7f7e699?pvs=4">팀 노션</a>  
 
 ## Branch Strategy
 
