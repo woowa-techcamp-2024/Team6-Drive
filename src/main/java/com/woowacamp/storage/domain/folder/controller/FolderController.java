@@ -1,4 +1,4 @@
-package com.woowacamp.storage.domain.folder.folder;
+package com.woowacamp.storage.domain.folder.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
