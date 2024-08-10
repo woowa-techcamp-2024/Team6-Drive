@@ -1,4 +1,4 @@
-package com.woowacamp.storage.domain.user.entity.dto.request;
+package com.woowacamp.storage.domain.user.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
