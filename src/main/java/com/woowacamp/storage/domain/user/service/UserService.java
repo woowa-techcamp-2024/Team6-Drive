@@ -41,7 +41,7 @@ public class UserService {
 
 		FolderMetadata rootFolder = folderMetadataRepository.save(createFolderMetadata(now, rootFolderName));
 
-		User user = userRepository.save(createUser(req, rootFolder));
+		User user = userRepository.save(createUser(req.getUserName(), rootFolder));
 
 		rootFolder.initOwnerId(user.getId());
 		rootFolder.initCreatorId(user.getId());
