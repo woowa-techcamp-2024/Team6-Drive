@@ -5,7 +5,6 @@ import static com.woowacamp.storage.domain.user.entity.UserFactory.*;
 
 import java.time.LocalDateTime;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,7 +14,7 @@ import com.woowacamp.storage.domain.user.dto.UserDto;
 import com.woowacamp.storage.domain.user.dto.request.CreateUserReqDto;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
-import com.woowacamp.storage.global.error.CustomException;
+import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,7 +29,7 @@ public class UserService {
 	@Transactional(readOnly = true)
 	public UserDto findById(Long userId) {
 		User user = userRepository.findById(userId)
-			.orElseThrow(() -> new CustomException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+			.orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
 
 		return new UserDto(user.getId(), user.getRootFolderId(), user.getUserName());
 	}
@@ -41,7 +40,7 @@ public class UserService {
 
 		FolderMetadata rootFolder = folderMetadataRepository.save(createFolderMetadata(now, rootFolderName));
 
-		User user = userRepository.save(createUser(req.getUserName(), rootFolder));
+		User user = userRepository.save(createUser(req.userName(), rootFolder));
 
 		rootFolder.initOwnerId(user.getId());
 		rootFolder.initCreatorId(user.getId());

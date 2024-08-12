@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 public enum ErrorCode {
 
 	// 400
+	USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "사용자를 찾을 수 없습니다.")
 
 	// 500
 
