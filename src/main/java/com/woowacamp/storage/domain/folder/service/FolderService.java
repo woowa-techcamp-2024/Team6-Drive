@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
+import com.woowacamp.storage.domain.folder.dto.CursorType;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsDto;
+import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.global.constant.UploadStatus;
@@ -20,8 +22,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class FolderService {
-	private static final String FILE_CURSOR_TYPE = "File";
-	private static final String FOLDER_CURSOR_TYPE = "Folder";
 	private static final long INITIAL_CURSOR_ID = 0L;
 
 	private final FileMetadataRepository fileMetadataRepository;
@@ -36,15 +36,15 @@ public class FolderService {
 		}
 	}
 
-	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, String cursorType, int size, String sortBy,
-		Sort.Direction sortDirection) {
-		Sort sort = Sort.by(sortDirection, sortBy);
+	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, CursorType cursorType, int size,
+		FolderContentsSortField sortBy, Sort.Direction sortDirection) {
+		Sort sort = Sort.by(sortDirection, sortBy.getValue());
 		List<FolderMetadata> folders = new ArrayList<>();
 		List<FileMetadata> files = new ArrayList<>();
 
-		if (FILE_CURSOR_TYPE.equalsIgnoreCase(cursorType)) {
+		if (cursorType.equals(CursorType.FILE)) {
 			files = fetchFiles(folderId, cursorId, size, sort);
-		} else {
+		} else if (cursorType.equals(CursorType.FOLDER)) {
 			folders = fetchFolders(folderId, cursorId, size, sort);
 			if (folders.size() < size) {
 				files = fetchFiles(folderId, INITIAL_CURSOR_ID, size - folders.size(), sort);
@@ -72,9 +72,9 @@ public class FolderService {
 		}
 
 		if (!files.isEmpty()) {
-			return new CursorInfo(files.get(files.size() - 1).getId(), FILE_CURSOR_TYPE);
+			return new CursorInfo(files.get(files.size() - 1).getId(), CursorType.FILE.getValue());
 		} else {
-			return new CursorInfo(folders.get(folders.size() - 1).getId(), FOLDER_CURSOR_TYPE);
+			return new CursorInfo(folders.get(folders.size() - 1).getId(), CursorType.FOLDER.getValue());
 		}
 	}
 

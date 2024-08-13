@@ -1,6 +1,10 @@
 package com.woowacamp.storage.domain.folder.service;
 
+import static com.woowacamp.storage.domain.folder.dto.CursorType.FILE;
+import static com.woowacamp.storage.domain.folder.dto.CursorType.*;
+import static com.woowacamp.storage.domain.folder.dto.FolderContentsSortField.*;
 import static org.assertj.core.api.Assertions.*;
+import static org.springframework.data.domain.Sort.Direction.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -10,8 +14,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
+
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsDto;
@@ -48,8 +52,7 @@ class FolderServiceTest {
 		}
 
 		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, "Folder", 5, "createdAt",
-			Sort.Direction.ASC);
+		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
 
 		// Then
 		assertThat(result.folderMetadataList()).hasSize(5);
@@ -72,8 +75,7 @@ class FolderServiceTest {
 		}
 
 		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, "Folder", 5, "createdAt",
-			Sort.Direction.ASC);
+		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
 
 		// Then
 		assertThat(result.folderMetadataList()).hasSize(3);
@@ -92,8 +94,7 @@ class FolderServiceTest {
 		}
 
 		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, "File", 3, "createdAt",
-			Sort.Direction.ASC);
+		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FILE, 3, CREATED_AT, ASC);
 
 		// Then
 		assertThat(result.folderMetadataList()).isEmpty();
@@ -108,8 +109,7 @@ class FolderServiceTest {
 		Long folderId = 1L;
 
 		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, "Folder", 5, "createdAt",
-			Sort.Direction.ASC);
+		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
 
 		// Then
 		assertThat(result.folderMetadataList()).isEmpty();
