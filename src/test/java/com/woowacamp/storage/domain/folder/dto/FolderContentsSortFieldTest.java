@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-public class FolderContentsSortFieldTest {
+import com.woowacamp.storage.global.error.CustomException;
+
+class FolderContentsSortFieldTest {
 
 	@Test
 	void fromValue_ShouldReturnEnum_WhenValidValueProvided() {
@@ -15,7 +17,7 @@ public class FolderContentsSortFieldTest {
 
 	@Test
 	void fromValue_ShouldThrowException_WhenInvalidValueProvided() {
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(CustomException.class, () -> {
 			FolderContentsSortField.fromValue("created_at");
 		});
 	}

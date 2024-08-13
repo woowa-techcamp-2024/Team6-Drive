@@ -1,22 +1,22 @@
 package com.woowacamp.storage.domain.folder.dto;
 
+import java.util.Arrays;
+
+import com.woowacamp.storage.global.error.ErrorCode;
+
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public enum FolderContentsSortField {
 	CREATED_AT("createdAt"), FOLDER_SIZE("size");
 	private final String value;
 
-	FolderContentsSortField(String value) {
-		this.value = value;
-	}
-
 	public static FolderContentsSortField fromValue(String value) {
-		for (FolderContentsSortField field : FolderContentsSortField.values()) {
-			if (field.getValue().equalsIgnoreCase(value)) {
-				return field;
-			}
-		}
-		throw new IllegalArgumentException("Invalid sort field: " + value);
+		return Arrays.stream(FolderContentsSortField.values())
+			.filter(type -> type.getValue().equalsIgnoreCase(value))
+			.findFirst()
+			.orElseThrow(ErrorCode.WRONG_FOLDER_CONTENTS_SORT_FIELD::baseException);
 	}
 }
