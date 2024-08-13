@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsDto;
@@ -140,7 +138,7 @@ class FolderServiceTest {
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
 			.parentFolderId(parentFolderId)
-			.fileSize(1000L)
+			.size(1000L)
 			.uploadFileName(fileName)
 			.uuidFileName("uuid-" + fileName)
 			.uploadStatus(UploadStatus.SUCCESS)
