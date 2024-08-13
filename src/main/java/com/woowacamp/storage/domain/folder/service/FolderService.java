@@ -51,33 +51,15 @@ public class FolderService {
 			}
 		}
 
-		CursorInfo nextCursor = determineNextCursor(folders, files, size);
-		return new FolderContentsDto(folders, files, nextCursor.id, nextCursor.type);
+		return new FolderContentsDto(folders, files);
 	}
 
 	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int size, Sort sort) {
-		return fileMetadataRepository.findByParentFolderIdAndIdGreaterThanAndUploadStatus(folderId, cursorId,
-			UploadStatus.SUCCESS, PageRequest.of(0, size, sort));
-	}
-
-	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int size, Sort sort) {
-		return folderMetadataRepository.findByParentFolderIdAndIdGreaterThan(folderId, cursorId,
+		return fileMetadataRepository.findFilesByCursor(folderId, cursorId, UploadStatus.SUCCESS,
 			PageRequest.of(0, size, sort));
 	}
 
-	private CursorInfo determineNextCursor(List<FolderMetadata> folders, List<FileMetadata> files, int requestedSize) {
-		int totalItems = folders.size() + files.size();
-		if (totalItems < requestedSize) {
-			return new CursorInfo(null, null);
-		}
-
-		if (!files.isEmpty()) {
-			return new CursorInfo(files.get(files.size() - 1).getId(), CursorType.FILE.getValue());
-		} else {
-			return new CursorInfo(folders.get(folders.size() - 1).getId(), CursorType.FOLDER.getValue());
-		}
-	}
-
-	private record CursorInfo(Long id, String type) {
+	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int size, Sort sort) {
+		return folderMetadataRepository.findFoldersByCursor(folderId, cursorId, PageRequest.of(0, size, sort));
 	}
 }
