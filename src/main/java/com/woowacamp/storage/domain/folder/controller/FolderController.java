@@ -29,6 +29,6 @@ public class FolderController {
 
 		folderService.checkFolderOwnedBy(folderId, userId);
 
-		return folderService.getFolderContents(folderId, cursorId, cursorType, size, sortBy, sortDirection);
+		return folderService.getFolderContents(folderId, cursorId, cursorType, size, sortBy.getValue(), sortDirection);
 	}
 }
