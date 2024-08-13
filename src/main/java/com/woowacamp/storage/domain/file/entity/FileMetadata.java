@@ -20,9 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-	name = "file_metadata", indexes = @Index(name = "file_idx_parent_folder_id", columnList = "parent_folder_id")
-)
+@Table(name = "file_metadata", indexes = @Index(name = "file_idx_parent_folder_id", columnList = "parent_folder_id"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class FileMetadata {
@@ -58,7 +56,7 @@ public class FileMetadata {
 
 	@Column(name = "file_size", columnDefinition = "BIGINT NOT NULL")
 	@NotNull
-	private Long fileSize;
+	private Long size;
 
 	@Column(name = "upload_file_name", columnDefinition = "VARCHAR(100) NOT NULL")
 	@NotNull
@@ -75,7 +73,7 @@ public class FileMetadata {
 
 	@Builder
 	private FileMetadata(Long id, Long rootId, Long creatorId, String fileType, LocalDateTime createdAt,
-		LocalDateTime updatedAt, Long parentFolderId, Long fileSize, String uploadFileName, String uuidFileName,
+		LocalDateTime updatedAt, Long parentFolderId, Long size, String uploadFileName, String uuidFileName,
 		UploadStatus uploadStatus) {
 		this.id = id;
 		this.rootId = rootId;
@@ -84,7 +82,7 @@ public class FileMetadata {
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 		this.parentFolderId = parentFolderId;
-		this.fileSize = fileSize;
+		this.size = size;
 		this.uploadFileName = uploadFileName;
 		this.uuidFileName = uuidFileName;
 		this.uploadStatus = uploadStatus;
