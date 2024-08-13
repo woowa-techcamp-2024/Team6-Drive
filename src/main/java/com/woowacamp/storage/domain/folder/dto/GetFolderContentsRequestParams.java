@@ -2,15 +2,16 @@ package com.woowacamp.storage.domain.folder.dto;
 
 import org.springframework.data.domain.Sort;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
 
 public record GetFolderContentsRequestParams(
 	@Positive Long userId,
 	@Positive Long cursorId,
 	@NotNull CursorType cursorType,
-	@Size(min = 0, max = MAX_SIZE) int size,
+	@Min(0) @Max(MAX_SIZE) int size,
 	FolderContentsSortField sortBy,
 	Sort.Direction sortDirection
 ) {

@@ -18,8 +18,6 @@ public enum ErrorCode {
 
 	// 500
 
-	;
-
 	private final HttpStatus status;
 	private final String message;
 
