@@ -11,15 +11,17 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
-	name = "file_metadata"
+	name = "file_metadata", indexes = @Index(name = "file_idx_parent_folder_id", columnList = "parent_folder_id")
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -70,4 +72,21 @@ public class FileMetadata {
 	@Column(name = "upload_status", columnDefinition = "VARCHAR(30) NOT NULL")
 	@NotNull
 	private UploadStatus uploadStatus;
+
+	@Builder
+	private FileMetadata(Long id, Long rootId, Long creatorId, String fileType, LocalDateTime createdAt,
+		LocalDateTime updatedAt, Long parentFolderId, Long fileSize, String uploadFileName, String uuidFileName,
+		UploadStatus uploadStatus) {
+		this.id = id;
+		this.rootId = rootId;
+		this.creatorId = creatorId;
+		this.fileType = fileType;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
+		this.parentFolderId = parentFolderId;
+		this.fileSize = fileSize;
+		this.uploadFileName = uploadFileName;
+		this.uuidFileName = uuidFileName;
+		this.uploadStatus = uploadStatus;
+	}
 }

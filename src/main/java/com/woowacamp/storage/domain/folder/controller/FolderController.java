@@ -1,8 +1,6 @@
 package com.woowacamp.storage.domain.folder.controller;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,11 +19,14 @@ public class FolderController {
 	private final FolderService folderService;
 
 	@GetMapping("/{folderId}")
-	private FolderContentsDto getFolderContents(
-		@PathVariable Long folderId,
-		@RequestParam Long userId,
-		@PageableDefault(size = 100, page = 0, sort = "createdAt", direction = Sort.Direction.DESC) @RequestParam PageRequest pageRequest) {
+	public FolderContentsDto getFolderContents(@PathVariable Long folderId, @RequestParam Long userId,
+		@RequestParam(required = false) Long cursorId,
+		@RequestParam(required = false, defaultValue = "Folder") String cursorType,
+		@RequestParam(defaultValue = "100") int size, @RequestParam(defaultValue = "createdAt") String sortBy,
+		@RequestParam(defaultValue = "DESC") Sort.Direction sortDirection) {
+
 		folderService.checkFolderOwnedBy(folderId, userId);
-		return folderService.getFolderContents(folderId, pageRequest);
+
+		return folderService.getFolderContents(folderId, cursorId, cursorType, size, sortBy, sortDirection);
 	}
 }

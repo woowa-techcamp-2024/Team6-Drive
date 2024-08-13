@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -15,9 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-	name = "folder_metadata"
-)
+@Table(name = "folder_metadata", indexes = @Index(name = "folder_idx_parent_folder_id", columnList = "parent_folder_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FolderMetadata {
@@ -50,6 +49,9 @@ public class FolderMetadata {
 	@Column(name = "upload_folder_name", columnDefinition = "VARCHAR(100) NOT NULL")
 	@NotNull
 	private String uploadFolderName;
+
+	@Column(name = "folder_size", columnDefinition = "BIGINT NOT NULL DEFAULT 0")
+	private long folderSize;
 
 	@Builder
 	private FolderMetadata(Long id, Long rootId, Long ownerId, Long creatorId, LocalDateTime createdAt,
