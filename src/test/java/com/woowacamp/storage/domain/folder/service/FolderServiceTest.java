@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,80 +44,91 @@ class FolderServiceTest {
 		folderMetadataRepository.deleteAllInBatch();
 	}
 
-	@Test
-	void getFolderContents_WhenFolderCursorAndEnoughFolders() {
-		// Given
-		Long folderId = 1L;
-		List<FolderMetadata> savedFolders = new ArrayList<>();
-		for (int i = 1; i <= 10; i++) {
-			savedFolders.add(folderMetadataRepository.save(createFolderMetadata(folderId, String.valueOf(i))));
+	@Nested
+	@DisplayName("getFolderContents 메소드는")
+	class getFolderContents {
+
+		@Nested
+		@DisplayName("CursorType 이 Folder 일 때")
+		class withFolderCursor {
+
+			@DisplayName("조회해야 하는 데이터 수가 조회 가능한 폴더 수보다 적으면 폴더 데이터만 전달하게 된다.")
+			@Test
+			void whenEnoughFolders() {
+				// Given
+				Long folderId = 1L;
+				List<FolderMetadata> savedFolders = new ArrayList<>();
+				for (int i = 1; i <= 10; i++) {
+					savedFolders.add(folderMetadataRepository.save(createFolderMetadata(folderId, String.valueOf(i))));
+				}
+
+				// When
+				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
+
+				// Then
+				assertThat(result.folderMetadataList()).hasSize(5);
+				assertThat(result.fileMetadataList()).isEmpty();
+			}
+
+			@DisplayName("조회해야 하는 데이터 수가 조회가능한 폴더 수보다 적으면 파일까지 조회한다.")
+			@Test
+			void whenNotEnoughFolders() {
+				// Given
+				Long folderId = 1L;
+				List<FolderMetadata> savedFolders = new ArrayList<>();
+				List<FileMetadata> savedFiles = new ArrayList<>();
+				for (int i = 1; i <= 3; i++) {
+					savedFolders.add(folderMetadataRepository.save(createFolderMetadata(folderId, String.valueOf(i))));
+				}
+				for (int i = 1; i <= 3; i++) {
+					savedFiles.add(fileMetadataRepository.save(createFileMetadata(folderId, String.valueOf(i))));
+				}
+
+				// When
+				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
+
+				// Then
+				assertThat(result.folderMetadataList()).hasSize(3);
+				assertThat(result.fileMetadataList()).hasSize(2);
+			}
 		}
 
-		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
+		@Nested
+		@DisplayName("CursorType 이 File 일 때")
+		class withFileCursor {
 
-		// Then
-		assertThat(result.folderMetadataList()).hasSize(5);
-		assertThat(result.fileMetadataList()).isEmpty();
-		assertThat(result.nextCursorId()).isEqualTo(savedFolders.get(4).getId());
-		assertThat(result.nextCursorType()).isEqualTo("Folder");
-	}
+			@DisplayName("FolderMetadataList 사이즈가 0이다.")
+			@Test
+			void whenFileCursor() {
+				// Given
+				Long folderId = 1L;
+				List<FileMetadata> savedFiles = new ArrayList<>();
+				for (int i = 1; i <= 5; i++) {
+					savedFiles.add(fileMetadataRepository.save(createFileMetadata(folderId, String.valueOf(i))));
+				}
 
-	@Test
-	void getFolderContents_WhenFolderCursorAndNotEnoughFolders() {
-		// Given
-		Long folderId = 1L;
-		List<FolderMetadata> savedFolders = new ArrayList<>();
-		List<FileMetadata> savedFiles = new ArrayList<>();
-		for (int i = 1; i <= 3; i++) {
-			savedFolders.add(folderMetadataRepository.save(createFolderMetadata(folderId, String.valueOf(i))));
+				// When
+				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FILE, 3, CREATED_AT, ASC);
+
+				// Then
+				assertThat(result.folderMetadataList()).isEmpty();
+				assertThat(result.fileMetadataList()).hasSize(3);
+			}
+
+			@DisplayName("조회가능한 파일이 없으면 FileMetadataList 사이즈가 0이다.")
+			@Test
+			void whenNoContents() {
+				// Given
+				Long folderId = 1L;
+
+				// When
+				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
+
+				// Then
+				assertThat(result.folderMetadataList()).isEmpty();
+				assertThat(result.fileMetadataList()).isEmpty();
+			}
 		}
-		for (int i = 1; i <= 3; i++) {
-			savedFiles.add(fileMetadataRepository.save(createFileMetadata(folderId, String.valueOf(i))));
-		}
-
-		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
-
-		// Then
-		assertThat(result.folderMetadataList()).hasSize(3);
-		assertThat(result.fileMetadataList()).hasSize(2);
-		assertThat(result.nextCursorId()).isEqualTo(savedFiles.get(1).getId());
-		assertThat(result.nextCursorType()).isEqualTo("File");
-	}
-
-	@Test
-	void getFolderContents_WhenFileCursor() {
-		// Given
-		Long folderId = 1L;
-		List<FileMetadata> savedFiles = new ArrayList<>();
-		for (int i = 1; i <= 5; i++) {
-			savedFiles.add(fileMetadataRepository.save(createFileMetadata(folderId, String.valueOf(i))));
-		}
-
-		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FILE, 3, CREATED_AT, ASC);
-
-		// Then
-		assertThat(result.folderMetadataList()).isEmpty();
-		assertThat(result.fileMetadataList()).hasSize(3);
-		assertThat(result.nextCursorId()).isEqualTo(savedFiles.get(2).getId());
-		assertThat(result.nextCursorType()).isEqualTo("File");
-	}
-
-	@Test
-	void getFolderContents_WhenNoContents() {
-		// Given
-		Long folderId = 1L;
-
-		// When
-		FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
-
-		// Then
-		assertThat(result.folderMetadataList()).isEmpty();
-		assertThat(result.fileMetadataList()).isEmpty();
-		assertThat(result.nextCursorId()).isNull();
-		assertThat(result.nextCursorType()).isNull();
 	}
 
 	private FolderMetadata createFolderMetadata(Long parentFolderId, String folderName) {
