@@ -1,17 +1,16 @@
 package com.woowacamp.storage.domain.folder.controller;
 
-import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.woowacamp.storage.domain.folder.dto.CursorType;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsDto;
-import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
+import com.woowacamp.storage.domain.folder.dto.GetFolderContentsRequestParams;
 import com.woowacamp.storage.domain.folder.service.FolderService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -21,13 +20,13 @@ public class FolderController {
 	private final FolderService folderService;
 
 	@GetMapping("/{folderId}")
-	public FolderContentsDto getFolderContents(@PathVariable Long folderId, @RequestParam Long userId,
-		@RequestParam Long cursorId, @RequestParam CursorType cursorType, @RequestParam(defaultValue = "100") int size,
-		@RequestParam(required = false, defaultValue = "createdAt") FolderContentsSortField sortBy,
-		@RequestParam(required = false, defaultValue = "DESC") Sort.Direction sortDirection) {
+	public FolderContentsDto getFolderContents(
+		@PathVariable Long folderId,
+		@Valid @ModelAttribute GetFolderContentsRequestParams request) {
 
-		folderService.checkFolderOwnedBy(folderId, userId);
+		folderService.checkFolderOwnedBy(folderId, request.userId());
 
-		return folderService.getFolderContents(folderId, cursorId, cursorType, size, sortBy, sortDirection);
+		return folderService.getFolderContents(folderId, request.cursorId(), request.cursorType(), request.size(),
+			request.sortBy(), request.sortDirection());
 	}
 }
