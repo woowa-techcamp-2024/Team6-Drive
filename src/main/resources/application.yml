@@ -1,16 +1,27 @@
 spring:
-  config:
-    activate:
-      on-profile: local
+#  config:
+#    activate:
+#      on-profile: local
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/drive
-    username: drive
-    password: 1234
+    username: root
+    password: root
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
+  servlet:
+    multipart:
+      enabled: false
+      resolve-lazily: true
+#
+#  servlet:
+#    multipart:
+#      location: /Users/woowatech04/Desktop
+#      enabled: true
+#      max-file-size: 2000MB
+#      max-request-size: 2000MB
