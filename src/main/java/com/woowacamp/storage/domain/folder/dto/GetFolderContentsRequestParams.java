@@ -8,8 +8,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record GetFolderContentsRequestParams(
-	@Positive Long userId,
-	@Positive Long cursorId,
+	@NotNull @Positive Long userId,
+	@NotNull @Positive Long cursorId,
 	@NotNull CursorType cursorType,
 	@Min(0) @Max(MAX_SIZE) int size,
 	FolderContentsSortField sortBy,
