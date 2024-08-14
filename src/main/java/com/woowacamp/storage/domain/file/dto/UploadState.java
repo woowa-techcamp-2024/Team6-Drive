@@ -36,7 +36,7 @@ public class UploadState {
 		this.initResponse = initResponse;
 	}
 
-	public void initPartEtag(String fileName){
+	public void initPartEtag(String fileName) {
 		partETagsMap.put(fileName, new ArrayList<>());
 	}
 }
