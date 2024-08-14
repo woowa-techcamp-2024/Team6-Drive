@@ -16,7 +16,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "folder_metadata", indexes = @Index(name = "folder_idx_parent_folder_id", columnList = "parent_folder_id"))
+@Table(name = "folder_metadata", indexes = {
+	@Index(name = "folder_idx_parent_folder_id_size", columnList = "parent_folder_id, created_at"),
+	@Index(name = "folder_idx_parent_folder_id_created_at", columnList = "parent_folder_id, folder_size")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FolderMetadata {

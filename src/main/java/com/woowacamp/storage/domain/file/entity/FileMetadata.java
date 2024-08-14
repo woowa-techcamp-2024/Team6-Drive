@@ -20,7 +20,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "file_metadata", indexes = @Index(name = "file_idx_parent_folder_id", columnList = "parent_folder_id"))
+@Table(name = "file_metadata", indexes = {
+	@Index(name = "file_idx_parent_folder_id_size", columnList = "parent_folder_id, created_at"),
+	@Index(name = "file_idx_parent_folder_id_created_at", columnList = "parent_folder_id, file_size")
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class FileMetadata {
