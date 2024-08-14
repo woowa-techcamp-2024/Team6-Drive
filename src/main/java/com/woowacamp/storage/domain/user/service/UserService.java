@@ -38,7 +38,7 @@ public class UserService {
 	public UserDto save(CreateUserReqDto req) {
 		LocalDateTime now = LocalDateTime.now();
 
-		FolderMetadata rootFolder = folderMetadataRepository.save(createFolderMetadata(now, rootFolderName));
+		FolderMetadata rootFolder = folderMetadataRepository.save(createFolderMetadataBySignup(now, rootFolderName));
 
 		User user = userRepository.save(createUser(req.userName(), rootFolder));
 
