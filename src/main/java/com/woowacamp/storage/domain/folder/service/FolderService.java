@@ -38,28 +38,27 @@ public class FolderService {
 
 	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, CursorType cursorType, int size,
 		FolderContentsSortField sortBy, Sort.Direction sortDirection) {
-		Sort sort = Sort.by(sortDirection, sortBy.getValue());
 		List<FolderMetadata> folders = new ArrayList<>();
 		List<FileMetadata> files = new ArrayList<>();
 
 		if (cursorType.equals(CursorType.FILE)) {
-			files = fetchFiles(folderId, cursorId, size, sort);
+			files = fetchFiles(folderId, cursorId, size, sortBy, sortDirection);
 		} else if (cursorType.equals(CursorType.FOLDER)) {
-			folders = fetchFolders(folderId, cursorId, size, sort);
+			folders = fetchFolders(folderId, cursorId, size, sortBy, sortDirection);
 			if (folders.size() < size) {
-				files = fetchFiles(folderId, INITIAL_CURSOR_ID, size - folders.size(), sort);
+				files = fetchFiles(folderId, INITIAL_CURSOR_ID, size - folders.size(), sortBy, sortDirection);
 			}
 		}
 
 		return new FolderContentsDto(folders, files);
 	}
 
-	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int size, Sort sort) {
-		return fileMetadataRepository.findFilesByCursor(folderId, cursorId, UploadStatus.SUCCESS,
-			PageRequest.of(0, size, sort));
+	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy, Sort.Direction direction) {
+		return fileMetadataRepository.findAllByParentIdAndCursorIdOrderBy(folderId, cursorId, sortBy, direction, size);
 	}
 
-	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int size, Sort sort) {
-		return folderMetadataRepository.findFoldersByCursor(folderId, cursorId, PageRequest.of(0, size, sort));
+	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy, Sort.Direction direction) {
+		return folderMetadataRepository.findAllByParentIdAndCursorIdOrderBy(folderId, cursorId, sortBy, direction,
+			size);
 	}
 }
