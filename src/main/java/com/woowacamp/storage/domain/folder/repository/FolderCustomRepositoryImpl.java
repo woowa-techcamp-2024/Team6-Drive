@@ -18,7 +18,7 @@ public class FolderCustomRepositoryImpl implements FolderCustomRepository {
 
 	private final JPAQueryFactory queryFactory;
 
-	public List<FolderMetadata> findAllByParentIdAndCursorIdOrderBy(long parentId, long cursorId,
+	public List<FolderMetadata> selectFoldersWithPagination(long parentId, long cursorId,
 		FolderContentsSortField sortBy, Sort.Direction direction, int size) {
 		QFolderMetadata folderMetadata = QFolderMetadata.folderMetadata;
 
@@ -29,16 +29,12 @@ public class FolderCustomRepositoryImpl implements FolderCustomRepository {
 
 		// 정렬 조건 적용
 		OrderSpecifier<?> orderSpecifier;
-
 		switch (sortBy) {
-			case CREATED_AT:
-				orderSpecifier =
-					direction.isAscending() ? folderMetadata.createdAt.asc() : folderMetadata.createdAt.desc();
-				break;
-			case FOLDER_SIZE:
+			case CREATED_AT -> orderSpecifier =
+				direction.isAscending() ? folderMetadata.createdAt.asc() : folderMetadata.createdAt.desc();
+			case FOLDER_SIZE ->
 				orderSpecifier = direction.isAscending() ? folderMetadata.size.asc() : folderMetadata.size.desc();
-				break;
-			default:
+			default ->
 				// 기본적으로 ID로 정렬
 				orderSpecifier = folderMetadata.id.asc();
 		}

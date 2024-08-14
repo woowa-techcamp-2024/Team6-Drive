@@ -8,6 +8,6 @@ import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 
 public interface FolderCustomRepository {
-	List<FolderMetadata> findAllByParentIdAndCursorIdOrderBy(long parentId, long cursorId,
+	List<FolderMetadata> selectFoldersWithPagination(long parentId, long cursorId,
 		FolderContentsSortField sortBy, Sort.Direction direction, int limit);
 }

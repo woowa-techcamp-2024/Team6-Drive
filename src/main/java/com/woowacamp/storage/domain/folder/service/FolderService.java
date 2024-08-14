@@ -3,9 +3,9 @@ package com.woowacamp.storage.domain.folder.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
@@ -14,7 +14,6 @@ import com.woowacamp.storage.domain.folder.dto.FolderContentsDto;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
-import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +26,7 @@ public class FolderService {
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
 
+	@Transactional(readOnly = true)
 	public void checkFolderOwnedBy(long folderId, long userId) {
 		FolderMetadata folderMetadata = folderMetadataRepository.findById(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
@@ -36,6 +36,7 @@ public class FolderService {
 		}
 	}
 
+	@Transactional(readOnly = true)
 	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, CursorType cursorType, int size,
 		FolderContentsSortField sortBy, Sort.Direction sortDirection) {
 		List<FolderMetadata> folders = new ArrayList<>();
@@ -53,12 +54,13 @@ public class FolderService {
 		return new FolderContentsDto(folders, files);
 	}
 
-	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy, Sort.Direction direction) {
-		return fileMetadataRepository.findAllByParentIdAndCursorIdOrderBy(folderId, cursorId, sortBy, direction, size);
+	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy,
+		Sort.Direction direction) {
+		return fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy, direction, size);
 	}
 
-	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy, Sort.Direction direction) {
-		return folderMetadataRepository.findAllByParentIdAndCursorIdOrderBy(folderId, cursorId, sortBy, direction,
-			size);
+	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy,
+		Sort.Direction direction) {
+		return folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId, sortBy, direction, size);
 	}
 }

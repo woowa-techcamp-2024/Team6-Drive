@@ -8,6 +8,6 @@ import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 
 public interface FileCustomRepository {
-	List<FileMetadata> findAllByParentIdAndCursorIdOrderBy(long parentId, long cursorId, FolderContentsSortField sortBy,
+	List<FileMetadata> selectFilesWithPagination(long parentId, long cursorId, FolderContentsSortField sortBy,
 		Sort.Direction direction, int limit);
 }

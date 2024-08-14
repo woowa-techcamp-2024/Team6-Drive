@@ -21,7 +21,7 @@ public class FileCustomRepositoryImpl implements FileCustomRepository {
 	private static final QFileMetadata fileMetadata = QFileMetadata.fileMetadata;
 	private final JPAQueryFactory queryFactory;
 
-	public List<FileMetadata> findAllByParentIdAndCursorIdOrderBy(long parentId, long cursorId,
+	public List<FileMetadata> selectFilesWithPagination(long parentId, long cursorId,
 		FolderContentsSortField sortBy, Sort.Direction direction, int size) {
 
 		// 기본 쿼리 구성 , where 조건 parentFolderId, uploadStatus
@@ -33,13 +33,11 @@ public class FileCustomRepositoryImpl implements FileCustomRepository {
 		// 정렬 조건 적용
 		OrderSpecifier<?> orderSpecifier;
 		switch (sortBy) {
-			case CREATED_AT:
+			case CREATED_AT ->
 				orderSpecifier = direction.isAscending() ? fileMetadata.createdAt.asc() : fileMetadata.createdAt.desc();
-				break;
-			case FOLDER_SIZE:
+			case FOLDER_SIZE ->
 				orderSpecifier = direction.isAscending() ? fileMetadata.size.asc() : fileMetadata.size.desc();
-				break;
-			default:
+			default ->
 				// 기본적으로 ID로 정렬
 				orderSpecifier = fileMetadata.id.asc();
 		}
