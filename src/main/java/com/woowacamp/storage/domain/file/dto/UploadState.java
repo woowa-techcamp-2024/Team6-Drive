@@ -9,13 +9,16 @@ import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.PartETag;
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class UploadState {
 	private InitiateMultipartUploadResult initResponse;
 	private Map<String, List<PartETag>> partETagsMap = new HashMap<>();
 	private int partNumber = 0;
 	private long fileSize = 0;
+	private FileMetadataDto fileMetadataDto;
 
 	public void reset() {
 		initResponse = null;
