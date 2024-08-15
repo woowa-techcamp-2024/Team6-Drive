@@ -16,6 +16,7 @@ import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.woowacamp.storage.domain.file.dto.FileMetadataDto;
+import com.woowacamp.storage.domain.file.dto.FormMetadataDto;
 import com.woowacamp.storage.domain.file.dto.PartContext;
 import com.woowacamp.storage.domain.file.dto.UploadContext;
 import com.woowacamp.storage.domain.file.dto.UploadState;
@@ -114,8 +115,8 @@ public class FileController {
 				// boundary 읽은 이후
 				processHeader(line, partContext);
 				if (!partContext.isInHeader() && partContext.getCurrentFileName() != null) {
-					FileMetadataDto fileMetadataDto = s3FileService.createInitialMetadata(context.getFormFields(),
-						partContext);
+					FileMetadataDto fileMetadataDto = s3FileService.createInitialMetadata(
+						FormMetadataDto.of(context.getFormFields()), partContext);
 					context.updateFileMetadata(fileMetadataDto);
 					context.updateIsFileRead();
 					partContext.setUploadFileName(fileMetadataDto.uuid());
