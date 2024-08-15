@@ -1,12 +1,13 @@
 package com.woowacamp.storage.global.scheduler;
 
+import static java.time.Duration.*;
 import static java.time.ZonedDateTime.*;
 
-import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -28,30 +29,41 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AbortedUploadDeleteScheduler {
 
+	public static final int GRACE_PERIOD = 6;
+	public static final String ZONE_ID = "UTC";
+	public static final int DELAY = 1000 * 30;
+
 	private final AmazonS3 amazonS3;
 	private final FileMetadataRepository fileMetadataRepository;
-	private final String BUCKET_NAME = "group-6-drive";
+	@Value("${cloud.aws.credentials.bucketName}")
+	private String BUCKET_NAME;
 
 	/**
 	 * 완전히 쓰지 못한 파일들의 리스트를 추출합니다.
 	 * 이후 해당 리스트에서 6시간이 지난 데이터만 삭제합니다.
 	 * 실시간으로 쓰고 있는 데이터도 listMultipartUploads를 통해서 읽히기 때문에 긴 시간(6시간)이 지난 데이터만 제거합니다.
 	 */
-	@Scheduled(fixedDelay = 1000 * 60)
+	@Scheduled(fixedDelay = DELAY)
 	public void deleteAbortedUpload() {
 		MultipartUploadListing listing = amazonS3.listMultipartUploads(new ListMultipartUploadsRequest(BUCKET_NAME));
 		List<MultipartUpload> abortedUploads = listing.getMultipartUploads();
 		abortedUploads.stream()
 			.filter(abortedUpload -> {
-				ZonedDateTime now = now(ZoneId.of("UTC"));
-				ZonedDateTime uploadDate = ofInstant(abortedUpload.getInitiated().toInstant(), ZoneId.of("UTC"));
-				return Duration.between(now.toInstant(), uploadDate.toInstant()).abs().compareTo(Duration.ofHours(6))
-					   >= 0;
+				ZonedDateTime now = now(ZoneId.of(ZONE_ID));
+				ZonedDateTime uploadDate = ofInstant(abortedUpload.getInitiated().toInstant(), ZoneId.of(ZONE_ID));
+				return isAfterGracePeriod(now, uploadDate);
 			}).forEach(
 				abortedUpload -> {
 					amazonS3.abortMultipartUpload(new AbortMultipartUploadRequest(BUCKET_NAME, abortedUpload.getKey(),
 						abortedUpload.getUploadId()));
 					fileMetadataRepository.deleteByUuidFileName(abortedUpload.getKey());
 				});
+	}
+
+	/**
+	 * 유예기간이 변경됐는지 확인
+	 */
+	private boolean isAfterGracePeriod(ZonedDateTime now, ZonedDateTime uploadDate) {
+		return between(now.toInstant(), uploadDate.toInstant()).abs().compareTo(ofHours(GRACE_PERIOD)) >= 0;
 	}
 }
