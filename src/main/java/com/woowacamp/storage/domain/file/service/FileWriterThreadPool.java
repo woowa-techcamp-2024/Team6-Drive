@@ -22,7 +22,9 @@ import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
 import com.woowacamp.storage.domain.file.dto.PartContext;
+import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.util.CustomS3BlockingQueuePolicy;
+import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +39,7 @@ public class FileWriterThreadPool {
 	private final AmazonS3 amazonS3;
 	private final ExecutorService executorService;
 
-	public FileWriterThreadPool(AmazonS3 amazonS3) {
+	public FileWriterThreadPool(AmazonS3 amazonS3, FileMetadataRepository fileMetadataRepository) {
 		this.amazonS3 = amazonS3;
 		this.maxPartCountMap = new HashMap<>();
 		this.currentPartCountMap = new HashMap<>();
@@ -49,17 +51,27 @@ public class FileWriterThreadPool {
 			workQueue,
 			new CustomS3BlockingQueuePolicy()
 		);
+		this.fileMetadataRepository = fileMetadataRepository;
 	}
 
 	public void produce(InitiateMultipartUploadResult initResponse, String currentFileName, int partNumber,
 		byte[] contentBuffer, int bufferLength, List<PartETag> partETags) {
 
+		if (!currentPartCountMap.containsKey(currentFileName)) {
+			log.info("[Error Occurred] 이미 중단된 작업입니다. partNumber: {} ", partNumber);
+			fileMetadataRepository.deleteByUuidFileName(currentFileName);
+			throw ErrorCode.FILE_UPLOAD_FAILED.baseException();
+		}
 		executorService.execute(() -> {
 			log.info("partNumber: {}", partNumber);
 			uploadPart(initResponse.getUploadId(), currentFileName, partNumber, contentBuffer, bufferLength, partETags);
-			int currentConsumeCount = currentPartCountMap.get(currentFileName).incrementAndGet();
+			AtomicInteger currentConsumeCount = currentPartCountMap.get(currentFileName);
+			if (currentConsumeCount != null) {
+				currentConsumeCount.incrementAndGet();
+			}
 			Integer maxConsumeCount = maxPartCountMap.get(currentFileName);
-			if (maxConsumeCount != null && currentConsumeCount >= maxConsumeCount) {
+			if (maxConsumeCount != null
+				&& currentConsumeCount.get() >= maxConsumeCount) {
 				completeFileUpload(initResponse.getUploadId(), currentFileName, partETags);
 			}
 		});
