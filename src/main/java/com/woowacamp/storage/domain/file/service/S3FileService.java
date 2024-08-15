@@ -34,9 +34,16 @@ public class S3FileService implements FileService {
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final UserRepository userRepository;
 
-	private static final long MAX_FILE_SIZE = 500 * 1024 * 1024;
-	private static final long MAX_STORAGE_SIZE = 1024 * 1024 * 1024;
+	@Value("${file.request.maxFileSize}")
+	private long MAX_FILE_SIZE;
+	@Value("${file.request.maxStorageSize}")
+	private long MAX_STORAGE_SIZE;
 
+	/**
+	 *
+	 * 1차로 메타데이터를 생성하는 메소드.
+	 * 사용자의 요청 데이터에 있는 사용자 정보, 상위 폴더 정보, 파일 사이즈의 정보를 저장
+	 */
 	@Transactional
 	public FileMetadataDto createInitialMetadata(Map<String, String> formFields, PartContext partContext) {
 		long userId;

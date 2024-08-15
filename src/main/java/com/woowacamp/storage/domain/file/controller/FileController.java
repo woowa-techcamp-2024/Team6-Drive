@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,10 +35,14 @@ public class FileController {
 	private final AmazonS3 amazonS3;
 	private final FileWriterThreadPool fileWriterThreadPool;
 
-	private static final String BUCKET_NAME = "group-6-drive";
-	private static final int BUFFER_SIZE = 8 * 1024;
-	private static final int LINE_BUFFER_MAX_SIZE = 1024 * 1024;
-	private static final int S3_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+	@Value("${cloud.aws.credentials.bucketName}")
+	private String BUCKET_NAME = "group-6-drive";
+	@Value("${file.reader.bufferSize}")
+	private int BUFFER_SIZE;
+	@Value("${file.reader.lineBufferMaxSize}")
+	private int LINE_BUFFER_MAX_SIZE;
+	@Value("${file.reader.chunkSize}")
+	private int S3_CHUNK_SIZE;
 	private final S3FileService s3FileService;
 
 	/**
@@ -117,6 +122,7 @@ public class FileController {
 					state.setInitResponse(initializeFileUpload(partContext.getUploadFileName(),
 						partContext.getCurrentContentType()));
 					state.initPartEtag(partContext.getUploadFileName());
+					state.setFileMetadataDto(fileMetadataDto);
 				}
 			} else {
 				processContent(contentBuffer, lineBuffer, partContext, state);
@@ -138,6 +144,7 @@ public class FileController {
 		}
 		if (partContext.getCurrentFileName() != null) {
 			finishFileUpload(contentBuffer, state, partContext);
+			s3FileService.checkMetadata(state);
 		} else {
 			context.getFormFields().put(partContext.getCurrentFieldName(), contentBuffer.toString().trim());
 		}

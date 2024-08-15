@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,10 +37,14 @@ import lombok.RequiredArgsConstructor;
 public class SyncFileControllerV1 {
 
 	private final AmazonS3 amazonS3;
-	private final String bucketName = "group-6-drive";
-	private static final int BUFFER_SIZE = 256 * 1024;
-	private static final int LINE_BUFFER_MAX_SIZE = 1024 * 1024;
-	private static final int S3_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+	@Value("${cloud.aws.credentials.bucketName}")
+	private String BUCKET_NAME = "group-6-drive";
+	@Value("${file.reader.bufferSize}")
+	private int BUFFER_SIZE;
+	@Value("${file.reader.lineBufferMaxSize}")
+	private int LINE_BUFFER_MAX_SIZE;
+	@Value("${file.reader.chunkSize}")
+	private int S3_CHUNK_SIZE;
 
 	@PostMapping("/upload")
 	public Map<String, Object> handleFileUpload(HttpServletRequest request) throws Exception {
@@ -111,7 +116,7 @@ public class SyncFileControllerV1 {
 									ObjectMetadata metadata = new ObjectMetadata();
 									metadata.setContentType(currentContentType);
 									InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(
-										bucketName, currentFileName)
+										BUCKET_NAME, currentFileName)
 										.withObjectMetadata(metadata);
 									initResponse = amazonS3.initiateMultipartUpload(initRequest);
 									partETags = new ArrayList<>();
@@ -165,7 +170,7 @@ public class SyncFileControllerV1 {
 	private void uploadPart(String uploadId, String key, int partNumber, byte[] data, int length,
 		List<PartETag> partETags) {
 		UploadPartRequest uploadRequest = new UploadPartRequest()
-			.withBucketName(bucketName)
+			.withBucketName(BUCKET_NAME)
 			.withKey(key)
 			.withUploadId(uploadId)
 			.withPartNumber(partNumber)
@@ -178,7 +183,7 @@ public class SyncFileControllerV1 {
 
 	private void completeFileUpload(String uploadId, String key, List<PartETag> partETags, long fileSize) {
 		CompleteMultipartUploadRequest completeRequest = new CompleteMultipartUploadRequest(
-			bucketName, key, uploadId, partETags);
+			BUCKET_NAME, key, uploadId, partETags);
 		amazonS3.completeMultipartUpload(completeRequest);
 
 		System.out.println("File uploaded successfully. Key: " + key + ", Size: " + fileSize);
