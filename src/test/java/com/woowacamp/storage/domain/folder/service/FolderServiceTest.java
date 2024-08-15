@@ -1,26 +1,26 @@
 package com.woowacamp.storage.domain.folder.service;
 
-import static com.woowacamp.storage.domain.folder.dto.CursorType.FILE;
-import static com.woowacamp.storage.domain.folder.dto.CursorType.*;
-import static com.woowacamp.storage.domain.folder.dto.FolderContentsSortField.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.data.domain.Sort.Direction.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
+import com.woowacamp.storage.domain.folder.dto.CursorType;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsDto;
+import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.global.constant.UploadStatus;
@@ -37,6 +37,10 @@ class FolderServiceTest {
 
 	@Autowired
 	private FolderService folderService;
+	private FolderMetadata parentFolder;
+	private List<FolderMetadata> subFolders;
+	private List<FileMetadata> files;
+	private LocalDateTime now;
 
 	@AfterEach
 	void afterEach() {
@@ -44,118 +48,164 @@ class FolderServiceTest {
 		folderMetadataRepository.deleteAllInBatch();
 	}
 
+	@BeforeEach
+	void setUp() {
+		now = LocalDateTime.now();
+		fileMetadataRepository.deleteAll();
+		folderMetadataRepository.deleteAll();
+
+		parentFolder = folderMetadataRepository.save(
+			FolderMetadata.builder().createdAt(now).updatedAt(now).uploadFolderName("Parent Folder").build());
+
+		subFolders = new ArrayList<>();
+		files = new ArrayList<>();
+
+		for (int i = 0; i < 7; i++) {
+			subFolders.add(folderMetadataRepository.save(FolderMetadata.builder()
+				.rootId(1L)
+				.creatorId(1L)
+				.createdAt(now.minusDays(i))
+				.updatedAt(now)
+				.parentFolderId(parentFolder.getId())
+				.size(1000 * (i + 1))
+				.uploadFolderName("Sub Folder " + (i + 1))
+				.build()));
+		}
+
+		for (int i = 0; i < 7; i++) {
+			files.add(fileMetadataRepository.save(FileMetadata.builder()
+				.rootId(1L)
+				.uuidFileName("uuidFileName" + i)
+				.creatorId(1L)
+				.fileType("file")
+				.createdAt(now.minusHours(i))
+				.updatedAt(now)
+				.parentFolderId(parentFolder.getId())
+				.size((long)(500 * (i + 1)))
+				.uploadStatus(UploadStatus.SUCCESS)
+				.uploadFileName("File " + (i + 1))
+				.build()));
+		}
+	}
+
 	@Nested
 	@DisplayName("getFolderContents 메소드는")
-	class getFolderContents {
+	class GetFolderContentsTest {
 
 		@Nested
-		@DisplayName("CursorType 이 Folder 일 때")
-		class withFolderCursor {
+		@DisplayName("파일 커서 타입 조건에서")
+		class WithFileCursorType {
 
-			@DisplayName("조회해야 하는 데이터 수가 조회 가능한 폴더 수보다 적으면 폴더 데이터만 전달하게 된다.")
 			@Test
-			void whenEnoughFolders() {
-				// Given
-				Long folderId = 1L;
-				List<FolderMetadata> savedFolders = new ArrayList<>();
-				for (int i = 1; i <= 10; i++) {
-					savedFolders.add(folderMetadataRepository.save(createFolderMetadata(folderId, String.valueOf(i))));
-				}
-
+			@DisplayName("생성 시간 기준 오름차순으로 파일 목록을 반환한다")
+			void orderByCreatedAt_asc() {
 				// When
-				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
+				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
+					10, FolderContentsSortField.CREATED_AT, Sort.Direction.ASC, now, 0L);
 
 				// Then
-				assertThat(result.folderMetadataList()).hasSize(5);
-				assertThat(result.fileMetadataList()).isEmpty();
+				assertEquals(7, result.fileMetadataList().size());
+				assertTrue(result.folderMetadataList().isEmpty());
+				for (int i = 0; i < result.fileMetadataList().size() - 1; i++) {
+					assertTrue(result.fileMetadataList()
+						.get(i)
+						.getCreatedAt()
+						.isBefore(result.fileMetadataList().get(i + 1).getCreatedAt()) || result.fileMetadataList()
+						.get(i)
+						.getCreatedAt()
+						.equals(result.fileMetadataList().get(i + 1).getCreatedAt()));
+				}
 			}
 
-			@DisplayName("조회해야 하는 데이터 수가 조회가능한 폴더 수보다 적으면 파일까지 조회한다.")
 			@Test
-			void whenNotEnoughFolders() {
-				// Given
-				Long folderId = 1L;
-				List<FolderMetadata> savedFolders = new ArrayList<>();
-				List<FileMetadata> savedFiles = new ArrayList<>();
-				for (int i = 1; i <= 3; i++) {
-					savedFolders.add(folderMetadataRepository.save(createFolderMetadata(folderId, String.valueOf(i))));
-				}
-				for (int i = 1; i <= 3; i++) {
-					savedFiles.add(fileMetadataRepository.save(createFileMetadata(folderId, String.valueOf(i))));
-				}
-
+			@DisplayName("크기 기준 내림차순으로 파일 목록을 반환한다")
+			void orderBySize_desc() {
 				// When
-				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
+				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
+					10, FolderContentsSortField.FOLDER_SIZE, Sort.Direction.DESC, now, 0L);
 
 				// Then
-				assertThat(result.folderMetadataList()).hasSize(3);
-				assertThat(result.fileMetadataList()).hasSize(2);
+				assertEquals(7, result.fileMetadataList().size());
+				assertTrue(result.folderMetadataList().isEmpty());
+				for (int i = 0; i < result.fileMetadataList().size() - 1; i++) {
+					assertTrue(
+						result.fileMetadataList().get(i).getSize() >= result.fileMetadataList().get(i + 1).getSize());
+				}
+			}
+
+			@Test
+			@DisplayName("limit 개수만큼만 파일 목록을 반환한다")
+			void withLimit() {
+				// When
+				int limit = 5;
+				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
+					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.ASC, now, 0L);
+
+				// Then
+				assertEquals(limit, result.fileMetadataList().size());
+				assertTrue(result.folderMetadataList().isEmpty());
 			}
 		}
 
 		@Nested
-		@DisplayName("CursorType 이 File 일 때")
-		class withFileCursor {
+		@DisplayName("폴더 커서 타입 조건에서")
+		class WithFolderCursorType {
 
-			@DisplayName("FolderMetadataList 사이즈가 0이다.")
 			@Test
-			void whenFileCursor() {
-				// Given
-				Long folderId = 1L;
-				List<FileMetadata> savedFiles = new ArrayList<>();
-				for (int i = 1; i <= 5; i++) {
-					savedFiles.add(fileMetadataRepository.save(createFileMetadata(folderId, String.valueOf(i))));
-				}
-
+			@DisplayName("생성 시간 기준 내림차순으로 폴더와 파일 목록을 반환한다")
+			void orderByCreatedAt_desc() {
 				// When
-				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FILE, 3, CREATED_AT, ASC);
+				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FOLDER,
+					20, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L);
 
 				// Then
-				assertThat(result.folderMetadataList()).isEmpty();
-				assertThat(result.fileMetadataList()).hasSize(3);
+				List<FolderMetadata> resultFolders = result.folderMetadataList();
+				List<FileMetadata> resultFiles = result.fileMetadataList();
+				assertEquals(7, resultFolders.size());
+				assertEquals(7, resultFiles.size());
+				for (int i = 0; i < resultFolders.size() - 1; i++) {
+					assertTrue(resultFolders.get(i).getCreatedAt().isAfter(resultFolders.get(i + 1).getCreatedAt())
+						|| resultFolders.get(i).getCreatedAt().equals(resultFolders.get(i + 1).getCreatedAt()));
+				}
+				for (int i = 0; i < resultFiles.size() - 1; i++) {
+					assertTrue(resultFiles.get(i).getCreatedAt().isAfter(resultFiles.get(i + 1).getCreatedAt())
+						|| resultFiles.get(i).getCreatedAt().equals(resultFiles.get(i + 1).getCreatedAt()));
+				}
 			}
 
-			@DisplayName("조회가능한 파일이 없으면 FileMetadataList 사이즈가 0이다.")
 			@Test
-			void whenNoContents() {
-				// Given
-				Long folderId = 1L;
-
+			@DisplayName("크기 기준 오름차순으로 폴더와 파일 목록을 반환한다")
+			void orderBySize_asc() {
 				// When
-				FolderContentsDto result = folderService.getFolderContents(folderId, 0L, FOLDER, 5, CREATED_AT, ASC);
+				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FOLDER,
+					20, FolderContentsSortField.FOLDER_SIZE, Sort.Direction.ASC, now, 0L);
 
 				// Then
-				assertThat(result.folderMetadataList()).isEmpty();
-				assertThat(result.fileMetadataList()).isEmpty();
+				List<FolderMetadata> resultFolders = result.folderMetadataList();
+				List<FileMetadata> resultFiles = result.fileMetadataList();
+				assertEquals(7, resultFolders.size());
+				assertEquals(7, resultFiles.size());
+				for (int i = 0; i < resultFolders.size() - 1; i++) {
+					assertTrue(resultFolders.get(i).getSize() <= resultFolders.get(i + 1).getSize());
+				}
+				for (int i = 0; i < resultFiles.size() - 1; i++) {
+					assertTrue(resultFiles.get(i).getSize() <= resultFiles.get(i + 1).getSize());
+				}
+			}
+
+			@Test
+			@DisplayName("limit 개수만큼만 폴더와 파일 목록을 반환한다")
+			void withLimit() {
+				// When
+				int limit = 10;
+				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FOLDER,
+					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L);
+
+				// Then
+				assertEquals(limit, result.folderMetadataList().size() + result.fileMetadataList().size());
 			}
 		}
 	}
-
-	private FolderMetadata createFolderMetadata(Long parentFolderId, String folderName) {
-		return FolderMetadata.builder()
-			.rootId(1L)
-			.ownerId(1L)
-			.creatorId(1L)
-			.createdAt(LocalDateTime.now())
-			.updatedAt(LocalDateTime.now())
-			.parentFolderId(parentFolderId)
-			.uploadFolderName(folderName)
-			.build();
-	}
-
-	private FileMetadata createFileMetadata(Long parentFolderId, String fileName) {
-		return FileMetadata.builder()
-			.rootId(1L)
-			.creatorId(1L)
-			.fileType("txt")
-			.createdAt(LocalDateTime.now())
-			.updatedAt(LocalDateTime.now())
-			.parentFolderId(parentFolderId)
-			.size(1000L)
-			.uploadFileName(fileName)
-			.uuidFileName("uuid-" + fileName)
-			.uploadStatus(UploadStatus.SUCCESS)
-			.build();
-	}
-
 }
+
+
