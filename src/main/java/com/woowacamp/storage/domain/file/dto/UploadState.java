@@ -14,6 +14,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UploadState {
+	@Setter
 	private InitiateMultipartUploadResult initResponse;
 	private Map<String, List<PartETag>> partETagsMap = new HashMap<>();
 	private int partNumber = 0;
@@ -33,10 +34,6 @@ public class UploadState {
 
 	public void addFileSize(int fileSize) {
 		this.fileSize += fileSize;
-	}
-
-	public void setInitResponse(InitiateMultipartUploadResult initResponse) {
-		this.initResponse = initResponse;
 	}
 
 	public void initPartEtag(String fileName) {
