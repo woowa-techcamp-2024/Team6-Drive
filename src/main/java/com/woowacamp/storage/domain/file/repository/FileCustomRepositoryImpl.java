@@ -38,23 +38,23 @@ public class FileCustomRepositoryImpl implements FileCustomRepository {
 			case CREATED_AT:
 
 				if (direction.isAscending()) {
-					cursorCondition = fileMetadata.createdAt.gt(dateTime)
-						.or(fileMetadata.createdAt.eq(dateTime).and(fileMetadata.id.gt(cursorId)));
+					cursorCondition = fileMetadata.createdAt.goe(dateTime)
+						.and(fileMetadata.createdAt.gt(dateTime).or(fileMetadata.id.gt(cursorId)));
 					orderSpecifier = fileMetadata.createdAt.asc();
 				} else {
-					cursorCondition = fileMetadata.createdAt.lt(dateTime)
-						.or(fileMetadata.createdAt.eq(dateTime).and(fileMetadata.id.gt(cursorId)));
+					cursorCondition = fileMetadata.createdAt.loe(dateTime)
+						.and(fileMetadata.createdAt.lt(dateTime).or(fileMetadata.id.gt(cursorId)));
 					orderSpecifier = fileMetadata.createdAt.desc();
 				}
 				break;
 			case DATA_SIZE:
 				if (direction.isAscending()) {
-					cursorCondition = fileMetadata.size.gt(size)
-						.or(fileMetadata.size.eq(size).and(fileMetadata.id.gt(cursorId)));
+					cursorCondition = fileMetadata.size.goe(size)
+						.and(fileMetadata.size.gt(size).or(fileMetadata.id.gt(cursorId)));
 					orderSpecifier = fileMetadata.size.asc();
 				} else {
-					cursorCondition = fileMetadata.size.lt(size)
-						.or(fileMetadata.size.eq(size).and(fileMetadata.id.gt(cursorId)));
+					cursorCondition = fileMetadata.size.loe(size)
+						.and(fileMetadata.size.lt(size).or(fileMetadata.id.gt(cursorId)));
 					orderSpecifier = fileMetadata.size.desc();
 				}
 				break;

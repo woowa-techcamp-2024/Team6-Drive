@@ -35,23 +35,23 @@ public class FolderCustomRepositoryImpl implements FolderCustomRepository {
 			case CREATED_AT:
 
 				if (direction.isAscending()) {
-					cursorCondition = folderMetadata.createdAt.gt(dateTime)
-						.or(folderMetadata.createdAt.eq(dateTime).and(folderMetadata.id.gt(cursorId)));
+					cursorCondition = folderMetadata.createdAt.goe(dateTime)
+						.and(folderMetadata.createdAt.gt(dateTime).or(folderMetadata.id.gt(cursorId)));
 					orderSpecifier = folderMetadata.createdAt.asc();
 				} else {
-					cursorCondition = folderMetadata.createdAt.lt(dateTime)
-						.or(folderMetadata.createdAt.eq(dateTime).and(folderMetadata.id.gt(cursorId)));
+					cursorCondition = folderMetadata.createdAt.loe(dateTime)
+						.and(folderMetadata.createdAt.lt(dateTime).or(folderMetadata.id.gt(cursorId)));
 					orderSpecifier = folderMetadata.createdAt.desc();
 				}
 				break;
 			case DATA_SIZE:
 				if (direction.isAscending()) {
-					cursorCondition = folderMetadata.size.gt(size)
-						.or(folderMetadata.size.eq(size).and(folderMetadata.id.gt(cursorId)));
+					cursorCondition = folderMetadata.size.goe(size)
+						.and(folderMetadata.size.gt(size).or(folderMetadata.id.gt(cursorId)));
 					orderSpecifier = folderMetadata.size.asc();
 				} else {
-					cursorCondition = folderMetadata.size.lt(size)
-						.or(folderMetadata.size.eq(size).and(folderMetadata.id.gt(cursorId)));
+					cursorCondition = folderMetadata.size.loe(size)
+						.and(folderMetadata.size.lt(size).or(folderMetadata.id.gt(cursorId)));
 					orderSpecifier = folderMetadata.size.desc();
 				}
 				break;
