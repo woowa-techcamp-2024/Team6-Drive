@@ -1,5 +1,6 @@
 package com.woowacamp.storage.domain.file.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Sort;
@@ -22,7 +23,7 @@ public class FileCustomRepositoryImpl implements FileCustomRepository {
 	private final JPAQueryFactory queryFactory;
 
 	public List<FileMetadata> selectFilesWithPagination(long parentId, long cursorId,
-		FolderContentsSortField sortBy, Sort.Direction direction, int size) {
+		FolderContentsSortField sortBy, Sort.Direction direction, int limit, LocalDateTime time, Long size) {
 
 		// 기본 쿼리 구성 , where 조건 parentFolderId, uploadStatus
 		JPAQuery<FileMetadata> query = queryFactory.selectFrom(fileMetadata)
@@ -44,8 +45,8 @@ public class FileCustomRepositoryImpl implements FileCustomRepository {
 
 		// 정렬 조건 추가 (선택된 필드로 정렬 후, ID로 추가 정렬하여 일관성 유지)
 		query = query.orderBy(orderSpecifier, fileMetadata.id.asc());
-		// size 추가
-		query.limit(size);
+		// limit 추가
+		query.limit(limit);
 
 		return query.fetch();
 	}

@@ -1,5 +1,6 @@
 package com.woowacamp.storage.domain.folder.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,30 +38,33 @@ public class FolderService {
 	}
 
 	@Transactional(readOnly = true)
-	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, CursorType cursorType, int size,
-		FolderContentsSortField sortBy, Sort.Direction sortDirection) {
+	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, CursorType cursorType, int limit,
+		FolderContentsSortField sortBy, Sort.Direction sortDirection, LocalDateTime dateTime, Long size) {
 		List<FolderMetadata> folders = new ArrayList<>();
 		List<FileMetadata> files = new ArrayList<>();
 
 		if (cursorType.equals(CursorType.FILE)) {
-			files = fetchFiles(folderId, cursorId, size, sortBy, sortDirection);
+			files = fetchFiles(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size);
 		} else if (cursorType.equals(CursorType.FOLDER)) {
-			folders = fetchFolders(folderId, cursorId, size, sortBy, sortDirection);
-			if (folders.size() < size) {
-				files = fetchFiles(folderId, INITIAL_CURSOR_ID, size - folders.size(), sortBy, sortDirection);
+			folders = fetchFolders(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size);
+			if (folders.size() < limit) {
+				files = fetchFiles(folderId, INITIAL_CURSOR_ID, limit - folders.size(), sortBy, sortDirection, dateTime,
+					size);
 			}
 		}
 
 		return new FolderContentsDto(folders, files);
 	}
 
-	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy,
-		Sort.Direction direction) {
-		return fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy, direction, size);
+	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int limit, FolderContentsSortField sortBy,
+		Sort.Direction direction, LocalDateTime dateTime, Long size) {
+		return fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy, direction, limit, dateTime,
+			size);
 	}
 
-	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int size, FolderContentsSortField sortBy,
-		Sort.Direction direction) {
-		return folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId, sortBy, direction, size);
+	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int limit, FolderContentsSortField sortBy,
+		Sort.Direction direction, LocalDateTime dateTime, Long size) {
+		return folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId, sortBy, direction, limit,
+			dateTime, size);
 	}
 }

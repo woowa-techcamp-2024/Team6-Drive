@@ -20,13 +20,12 @@ public class FolderController {
 	private final FolderService folderService;
 
 	@GetMapping("/{folderId}")
-	public FolderContentsDto getFolderContents(
-		@PathVariable Long folderId,
+	public FolderContentsDto getFolderContents(@PathVariable Long folderId,
 		@Valid @ModelAttribute GetFolderContentsRequestParams request) {
 
 		folderService.checkFolderOwnedBy(folderId, request.userId());
 
-		return folderService.getFolderContents(folderId, request.cursorId(), request.cursorType(), request.size(),
-			request.sortBy(), request.sortDirection());
+		return folderService.getFolderContents(folderId, request.cursorId(), request.cursorType(), request.limit(),
+			request.sortBy(), request.sortDirection(), request.localDateTime(), request.size());
 	}
 }
