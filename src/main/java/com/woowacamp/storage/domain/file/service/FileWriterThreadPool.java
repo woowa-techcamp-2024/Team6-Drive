@@ -11,6 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.amazonaws.services.s3.AmazonS3;
@@ -28,21 +29,18 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class FileWriterThreadPool {
-	// TODO 환경 변수로 빼야함
-	private static final String BUCKET_NAME = "group-6-drive";
-	int corePoolSize = 20;
-	int maximumPoolSize = 40;
-	long keepAliveTime = 10;
-	TimeUnit unit = TimeUnit.SECONDS;
-	BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(400);
-	Map<String, Integer> maxPartCountMap = new HashMap<>();
-	Map<String, AtomicInteger> currentPartCountMap = new HashMap<>();
+	@Value("${cloud.aws.credentials.bucketName}")
+	private String BUCKET_NAME;
 
+	private final Map<String, Integer> maxPartCountMap;
+	private final Map<String, AtomicInteger> currentPartCountMap;
 	private final AmazonS3 amazonS3;
 	private final ExecutorService executorService;
 
 	public FileWriterThreadPool(AmazonS3 amazonS3) {
 		this.amazonS3 = amazonS3;
+		this.maxPartCountMap = new HashMap<>();
+		this.currentPartCountMap = new HashMap<>();
 		this.executorService = new ThreadPoolExecutor(
 			corePoolSize,
 			maximumPoolSize,
