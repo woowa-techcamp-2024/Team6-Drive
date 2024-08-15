@@ -18,18 +18,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class FolderCustomRepositoryImpl implements FolderCustomRepository {
 
+	private static final QFolderMetadata folderMetadata = QFolderMetadata.folderMetadata;
 	private final JPAQueryFactory queryFactory;
 
 	public List<FolderMetadata> selectFoldersWithPagination(long parentId, long cursorId,
 		FolderContentsSortField sortBy, Sort.Direction direction, int limit, LocalDateTime dateTime, Long size) {
-		QFolderMetadata folderMetadata = QFolderMetadata.folderMetadata;
 
 		// 기본 쿼리 구성
 		JPAQuery<FolderMetadata> query = queryFactory.selectFrom(folderMetadata)
 			.where(folderMetadata.parentFolderId.eq(parentId));
-
-		// 서브쿼리로 cursorId에 해당하는 생성 시간 또는 폴더 크기 가져오기
-		QFolderMetadata cursorFolder = new QFolderMetadata("cursorFolder");
 
 		// 커서 조건 및 정렬 조건 설정
 		BooleanExpression cursorCondition;
@@ -47,7 +44,7 @@ public class FolderCustomRepositoryImpl implements FolderCustomRepository {
 					orderSpecifier = folderMetadata.createdAt.desc();
 				}
 				break;
-			case FOLDER_SIZE:
+			case DATA_SIZE:
 				if (direction.isAscending()) {
 					cursorCondition = folderMetadata.size.gt(size)
 						.or(folderMetadata.size.eq(size).and(folderMetadata.id.gt(cursorId)));

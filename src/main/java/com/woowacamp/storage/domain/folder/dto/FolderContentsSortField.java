@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum FolderContentsSortField {
-	CREATED_AT("createdAt"), FOLDER_SIZE("size");
+	CREATED_AT("createdAt"), DATA_SIZE("size");
 	private final String value;
 
 	public static FolderContentsSortField fromValue(String value) {

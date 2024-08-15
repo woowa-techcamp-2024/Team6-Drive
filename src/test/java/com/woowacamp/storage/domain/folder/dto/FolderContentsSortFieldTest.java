@@ -12,7 +12,7 @@ class FolderContentsSortFieldTest {
 	void fromValue_ShouldReturnEnum_WhenValidValueProvided() {
 		// Valid cases
 		assertEquals(FolderContentsSortField.CREATED_AT, FolderContentsSortField.fromValue("createdAt"));
-		assertEquals(FolderContentsSortField.FOLDER_SIZE, FolderContentsSortField.fromValue("size"));
+		assertEquals(FolderContentsSortField.DATA_SIZE, FolderContentsSortField.fromValue("size"));
 	}
 
 	@Test

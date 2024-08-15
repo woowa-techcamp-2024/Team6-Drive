@@ -36,7 +36,7 @@ public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @No
 					} else {
 						localDateTime = LocalDateTime.now().plusYears(1000);
 					}
-				case FOLDER_SIZE:
+				case DATA_SIZE:
 					if (sortDirection.isAscending()) {
 						size = Long.MAX_VALUE;
 					} else {
