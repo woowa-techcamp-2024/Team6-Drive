@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -37,6 +38,10 @@ public class FileMetadata {
 	@Column(name = "creator_id", columnDefinition = "BIGINT NOT NULL")
 	@NotNull
 	private Long creatorId;
+
+	@Column(name = "owner_id", columnDefinition = "BIGINT NOT NULL")
+	@NotNull
+	private Long ownerId;
 
 	@Column(name = "file_type", columnDefinition = "VARCHAR(50) NOT NULL")
 	@NotNull
@@ -62,7 +67,7 @@ public class FileMetadata {
 	@NotNull
 	private String uploadFileName;
 
-	@Column(name = "uuid_file_name", columnDefinition = "VARCHAR(100) NOT NULL")
+	@Column(name = "uuid_file_name", columnDefinition = "VARCHAR(100) NOT NULL unique")
 	@NotNull
 	private String uuidFileName;
 
@@ -70,4 +75,49 @@ public class FileMetadata {
 	@Column(name = "upload_status", columnDefinition = "VARCHAR(30) NOT NULL")
 	@NotNull
 	private UploadStatus uploadStatus;
+
+	@Builder
+	public FileMetadata(
+		Long id,
+		Long rootId,
+		Long creatorId,
+		Long ownerId,
+		String fileType,
+		LocalDateTime createdAt,
+		LocalDateTime updatedAt,
+		Long parentFolderId,
+		Long fileSize,
+		String uploadFileName,
+		String uuidFileName,
+		UploadStatus uploadStatus
+	) {
+		this.id = id;
+		this.rootId = rootId;
+		this.creatorId = creatorId;
+		this.ownerId = ownerId;
+		this.fileType = fileType;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
+		this.parentFolderId = parentFolderId;
+		this.fileSize = fileSize;
+		this.uploadFileName = uploadFileName;
+		this.uuidFileName = uuidFileName;
+		this.uploadStatus = uploadStatus;
+	}
+
+	public void updateCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public void updateUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	public void updateFileSize(long fileSize) {
+		this.fileSize = fileSize;
+	}
+
+	public void updateFinishUploadStatus() {
+		this.uploadStatus = UploadStatus.SUCCESS;
+	}
 }
