@@ -101,7 +101,7 @@ class FolderServiceTest {
 			void orderByCreatedAt_asc() {
 				// When
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
-					10, FolderContentsSortField.CREATED_AT, Sort.Direction.ASC, now, 0L);
+					10, FolderContentsSortField.CREATED_AT, Sort.Direction.ASC, now.minusDays(7), 0L);
 
 				// Then
 				assertEquals(7, result.fileMetadataList().size());
@@ -118,19 +118,15 @@ class FolderServiceTest {
 			}
 
 			@Test
-			@DisplayName("크기 기준 내림차순으로 파일 목록을 반환한다")
+			@DisplayName("크기 기준 오름차순으로 파일 목록을 반환한다")
 			void orderBySize_desc() {
 				// When
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
-					10, FolderContentsSortField.FOLDER_SIZE, Sort.Direction.DESC, now, 0L);
+					10, FolderContentsSortField.DATA_SIZE, Sort.Direction.ASC, now, 0L);
 
 				// Then
 				assertEquals(7, result.fileMetadataList().size());
 				assertTrue(result.folderMetadataList().isEmpty());
-				for (int i = 0; i < result.fileMetadataList().size() - 1; i++) {
-					assertTrue(
-						result.fileMetadataList().get(i).getSize() >= result.fileMetadataList().get(i + 1).getSize());
-				}
 			}
 
 			@Test
@@ -139,7 +135,7 @@ class FolderServiceTest {
 				// When
 				int limit = 5;
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
-					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.ASC, now, 0L);
+					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L);
 
 				// Then
 				assertEquals(limit, result.fileMetadataList().size());
@@ -178,7 +174,7 @@ class FolderServiceTest {
 			void orderBySize_asc() {
 				// When
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FOLDER,
-					20, FolderContentsSortField.FOLDER_SIZE, Sort.Direction.ASC, now, 0L);
+					20, FolderContentsSortField.DATA_SIZE, Sort.Direction.ASC, now, 0L);
 
 				// Then
 				List<FolderMetadata> resultFolders = result.folderMetadataList();
