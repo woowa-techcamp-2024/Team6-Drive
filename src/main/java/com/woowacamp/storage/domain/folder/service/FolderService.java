@@ -45,6 +45,13 @@ public class FolderService {
 			req.uploadFolderName())) {
 			throw ErrorCode.INVALID_FILE_NAME.baseException();
 		}
+		validateFolderDepth(req);
+	}
+
+	/**
+	 * 폴더를 무제한 생성하는 것을 방지하기 위해 깊이를 확인하는 메소드
+	 */
+	private void validateFolderDepth(CreateFolderReqDto req) {
 		int depth = 1;
 		Long currentFolderId = req.parentFolderId();
 		while (true) {
@@ -55,7 +62,6 @@ public class FolderService {
 			currentFolderId = parentFolderIdById.get();
 			depth++;
 		}
-
 		if (depth >= CommonConstant.MAX_FOLDER_DEPTH) {
 			throw ErrorCode.EXCEED_MAX_FOLDER_DEPTH.baseException();
 		}
