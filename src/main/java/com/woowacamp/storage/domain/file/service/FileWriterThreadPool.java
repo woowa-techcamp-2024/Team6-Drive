@@ -1,11 +1,12 @@
 package com.woowacamp.storage.domain.file.service;
 
+import static com.woowacamp.storage.global.constant.CommonConstant.*;
+
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -14,8 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.PartETag;
@@ -38,17 +39,18 @@ public class FileWriterThreadPool {
 	private final Map<String, AtomicInteger> currentPartCountMap;
 	private final AmazonS3 amazonS3;
 	private final ExecutorService executorService;
+	private final FileMetadataRepository fileMetadataRepository;
 
 	public FileWriterThreadPool(AmazonS3 amazonS3, FileMetadataRepository fileMetadataRepository) {
 		this.amazonS3 = amazonS3;
 		this.maxPartCountMap = new HashMap<>();
 		this.currentPartCountMap = new HashMap<>();
 		this.executorService = new ThreadPoolExecutor(
-			corePoolSize,
-			maximumPoolSize,
-			keepAliveTime,
-			unit,
-			workQueue,
+			FILE_WRITER_CORE_POOL_SIZE,
+			FILE_WRITER_MAXIMUM_POOL_SIZE,
+			FILE_WRITER_KEEP_ALIVE_TIME,
+			TimeUnit.SECONDS,
+			new ArrayBlockingQueue<>(FILE_WRITER_QUEUE_SIZE),
 			new CustomS3BlockingQueuePolicy()
 		);
 		this.fileMetadataRepository = fileMetadataRepository;
@@ -90,18 +92,29 @@ public class FileWriterThreadPool {
 			.withPartNumber(partNumber)
 			.withInputStream(new ByteArrayInputStream(data, 0, length))
 			.withPartSize(length);
-		UploadPartResult uploadResult = amazonS3.uploadPart(uploadRequest);
+		UploadPartResult uploadResult;
+		try {
+			uploadResult = amazonS3.uploadPart(uploadRequest);
+		} catch (AmazonClientException e) {
+			log.error("partNumber: {}, part upload가 정상적으로 동작하지 않습니다.", partNumber);
+			currentPartCountMap.remove(key);
+			fileMetadataRepository.deleteByUuidFileName(key);
+			return;
+		}
 		partETags.add(uploadResult.getPartETag());
 	}
 
 	private void completeFileUpload(String uploadId, String currentFileName, List<PartETag> partETags) {
-		if (maxPartCountMap.get(currentFileName) != partETags.size()) {
-			amazonS3.abortMultipartUpload(new AbortMultipartUploadRequest(BUCKET_NAME, currentFileName, uploadId));
-			return;
+		maxPartCountMap.remove(currentFileName);
+		currentPartCountMap.remove(currentFileName);
+		CompleteMultipartUploadRequest completeRequest = new CompleteMultipartUploadRequest(BUCKET_NAME,
+			currentFileName, uploadId, partETags);
+		try {
+			amazonS3.completeMultipartUpload(completeRequest);
+		} catch (AmazonClientException e) {
+			log.error("[Error Occurred] completeFileUpload가 정상적으로 동작하지 않습니다.");
+			fileMetadataRepository.deleteByUuidFileName(currentFileName);
 		}
-		CompleteMultipartUploadRequest completeRequest = new CompleteMultipartUploadRequest(
-			BUCKET_NAME, currentFileName, uploadId, partETags);
-		amazonS3.completeMultipartUpload(completeRequest);
 	}
 
 	public void initializePartCount(String fileName) {
