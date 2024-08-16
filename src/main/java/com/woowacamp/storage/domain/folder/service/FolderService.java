@@ -37,7 +37,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class FolderService {
 	private static final long INITIAL_CURSOR_ID = 0L;
-	private static final int BATCH_SIZE = 10000;
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final UserRepository userRepository;
@@ -197,8 +196,8 @@ public class FolderService {
 			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
 
-		Queue<Long> folderIdListForDelete = new LinkedList<>();
-		Queue<Long> fileIdListForDelete = new LinkedList<>();
+		List<Long> folderIdListForDelete = new LinkedList<>();
+		List<Long> fileIdListForDelete = new LinkedList<>();
 
 		Stack<Long> folderIdStack = new Stack<>();
 		folderIdStack.push(folderMetadata.getId());
@@ -230,13 +229,12 @@ public class FolderService {
 			for (FolderMetadata childFolder : childFolders) {
 				folderIdStack.push(childFolder.getId());
 			}
-
-			if (folderIdListForDelete.size() >= BATCH_SIZE) {
-				folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
-			}
-			if (fileIdListForDelete.size() >= BATCH_SIZE) {
-				fileMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
-			}
+		}
+		if (!folderIdListForDelete.isEmpty()) {
+			folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
+		}
+		if (!fileIdListForDelete.isEmpty()) {
+			fileMetadataRepository.deleteAllByIdInBatch(fileIdListForDelete);
 		}
 	}
 }
