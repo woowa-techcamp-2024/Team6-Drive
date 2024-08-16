@@ -5,7 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 
-public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long> {
+public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long>, FileCustomRepository {
 
 	boolean existsByUuidFileName(String uuidFileName);
 

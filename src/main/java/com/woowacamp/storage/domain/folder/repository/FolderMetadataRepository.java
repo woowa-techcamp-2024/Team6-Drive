@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 
-public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, Long> {
+public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, Long>, FolderCustomRepository {
 
 	boolean existsByIdAndCreatorId(Long id, Long creatorId);
 

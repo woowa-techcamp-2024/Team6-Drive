@@ -13,6 +13,7 @@ import com.woowacamp.storage.domain.user.dto.UserDto;
 import com.woowacamp.storage.domain.user.dto.request.CreateUserReqDto;
 import com.woowacamp.storage.domain.user.service.UserService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -23,13 +24,13 @@ public class UserController {
 	private final UserService userService;
 
 	@GetMapping("/{userId}")
-	public UserDto getUser(@PathVariable Long userId) {
+	public UserDto getUser(@PathVariable long userId) {
 		return userService.findById(userId);
 	}
 
 	@PostMapping
 	@ResponseStatus(value = HttpStatus.CREATED)
-	public UserDto createUser(@RequestBody CreateUserReqDto req) {
+	public UserDto createUser(@RequestBody @Valid CreateUserReqDto req) {
 		return userService.save(req);
 	}
 }

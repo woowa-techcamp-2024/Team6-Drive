@@ -27,7 +27,7 @@ public class UserService {
 	private final FolderMetadataRepository folderMetadataRepository;
 
 	@Transactional(readOnly = true)
-	public UserDto findById(Long userId) {
+	public UserDto findById(long userId) {
 		User user = userRepository.findById(userId)
 			.orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
 

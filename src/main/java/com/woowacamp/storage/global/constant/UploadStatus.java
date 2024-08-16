@@ -4,5 +4,5 @@ public enum UploadStatus {
 
 	PENDING,
 	SUCCESS,
-	FAIl
+	FAIL
 }

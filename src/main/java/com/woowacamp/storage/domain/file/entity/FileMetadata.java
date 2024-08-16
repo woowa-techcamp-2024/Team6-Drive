@@ -11,6 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -19,9 +20,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-	name = "file_metadata"
-)
+@Table(name = "file_metadata", indexes = {
+	@Index(name = "file_idx_parent_folder_id_size", columnList = "parent_folder_id, created_at"),
+	@Index(name = "file_idx_parent_folder_id_created_at", columnList = "parent_folder_id, file_size")
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class FileMetadata {
