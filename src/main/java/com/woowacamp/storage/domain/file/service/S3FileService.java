@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class S3FileService implements FileService {
+public class S3FileService {
 
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
@@ -46,7 +46,6 @@ public class S3FileService implements FileService {
 	private long MAX_STORAGE_SIZE;
 
 	/**
-	 *
 	 * 1차로 메타데이터를 생성하는 메소드.
 	 * 사용자의 요청 데이터에 있는 사용자 정보, 상위 폴더 정보, 파일 사이즈의 정보를 저장
 	 */
@@ -87,7 +86,6 @@ public class S3FileService implements FileService {
 	}
 
 	/**
-	 *
 	 * 요청 폼 데이터의 fieldFileSize와 실제 파일 크기인 uploadFileSize가 치일한 지 확인하는 메소드
 	 */
 	public void checkMetadata(UploadState state) {
@@ -184,15 +182,5 @@ public class S3FileService implements FileService {
 		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId).orElseThrow(FILE_NOT_FOUND::baseException);
 		S3Object s3Object = amazonS3.getObject(new GetObjectRequest(bucketName, uuidFileName));
 		return new FileDataDto(FileMetadataDto.of(fileMetadata), s3Object.getObjectContent());
-	}
-
-	public FileMetadata getFileMetadataBy(Long fileId, Long userId) {
-		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
-			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
-
-		if (!Objects.equals(fileMetadata.getCreatorId(), userId)) {
-			throw ErrorCode.ACCESS_DENIED.baseException();
-		}
-		return fileMetadata;
 	}
 }
