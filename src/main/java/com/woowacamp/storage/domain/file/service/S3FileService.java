@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class S3FileService implements FileService {
+public class S3FileService{
 
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
