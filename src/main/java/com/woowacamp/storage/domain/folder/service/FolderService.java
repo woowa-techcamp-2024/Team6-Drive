@@ -46,7 +46,7 @@ public class FolderService {
 		}
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public void checkFolderOwnedBy(long folderId, long userId) {
 		FolderMetadata folderMetadata = folderMetadataRepository.findById(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
