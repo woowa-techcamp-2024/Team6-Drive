@@ -49,13 +49,13 @@ public class FileCustomRepositoryImpl implements FileCustomRepository {
 				break;
 			case DATA_SIZE:
 				if (direction.isAscending()) {
-					cursorCondition = fileMetadata.size.goe(size)
-						.and(fileMetadata.size.gt(size).or(fileMetadata.id.gt(cursorId)));
-					orderSpecifier = fileMetadata.size.asc();
+					cursorCondition = fileMetadata.fileSize.goe(size)
+						.and(fileMetadata.fileSize.gt(size).or(fileMetadata.id.gt(cursorId)));
+					orderSpecifier = fileMetadata.fileSize.asc();
 				} else {
-					cursorCondition = fileMetadata.size.loe(size)
-						.and(fileMetadata.size.lt(size).or(fileMetadata.id.gt(cursorId)));
-					orderSpecifier = fileMetadata.size.desc();
+					cursorCondition = fileMetadata.fileSize.loe(size)
+						.and(fileMetadata.fileSize.lt(size).or(fileMetadata.id.gt(cursorId)));
+					orderSpecifier = fileMetadata.fileSize.desc();
 				}
 				break;
 			default:

@@ -23,9 +23,9 @@ public enum ErrorCode {
 	FILE_METADATA_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
 	EXCEED_MAX_FOLDER_DEPTH(HttpStatus.BAD_REQUEST, "최대 폴더 깊이를 초과했습니다."),
 	INVALID_FILE_SIZE(HttpStatus.BAD_REQUEST, "요청 파일 사이즈와 실제 파일 사이즈가 일치하지 않습니다."),
-	// 500
-	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
-	;
+	FILE_NAME_DUPLICATE(HttpStatus.CONFLICT,"파일 또는 폴더 이름이 중복되었습니다."),
+	// 500,
+	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.");
 	private final HttpStatus status;
 	private final String message;
 
