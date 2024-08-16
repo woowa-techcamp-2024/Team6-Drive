@@ -5,13 +5,19 @@ import static com.woowacamp.storage.domain.folder.entity.FolderMetadataFactory.*
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.Stack;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.dto.CursorType;
@@ -31,10 +37,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class FolderService {
 	private static final long INITIAL_CURSOR_ID = 0L;
-
+	private static final int BATCH_SIZE = 10000;
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final UserRepository userRepository;
+	private final AmazonS3 amazonS3;
+	@Value("${cloud.aws.credentials.bucketName}")
+	private String BUCKET_NAME;
 
 	/**
 	 * 폴더 이름에 금칙어가 있는지 확인
@@ -135,6 +144,99 @@ public class FolderService {
 	private void validatePermission(CreateFolderReqDto req) {
 		if (!folderMetadataRepository.existsByIdAndCreatorId(req.parentFolderId(), req.userId())) {
 			throw ErrorCode.NO_PERMISSION.baseException();
+		}
+	}
+
+	// BFS 사용 , todo : 아직 덜 완성
+	@Transactional
+	public void deleteWithBFS(Long folderId, Long userId) {
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
+			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+		if (!folderMetadata.getOwnerId().equals(userId)) {
+			throw ErrorCode.ACCESS_DENIED.baseException();
+		}
+
+		List<Long> folderIdListForDelete = new ArrayList<>();
+
+		Long parentFolderId = folderMetadata.getId();
+
+		Queue<Long> folderIdQueue = new LinkedList<>();
+		folderIdQueue.offer(parentFolderId);
+
+		while (!folderIdQueue.isEmpty()) {
+			Long currentFolderId = folderIdQueue.poll();
+
+			folderIdListForDelete.add(currentFolderId);
+
+			// 하위의 파일 삭제
+			List<FileMetadata> childFiles = fileMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
+
+			// 하위의 폴더 조회
+			List<FolderMetadata> childFolder = folderMetadataRepository.findByParentFolderId(currentFolderId);
+
+			// 다음 연산을 위해 Queue 에 offer
+			childFolder.stream().forEach(folder -> {
+				folderIdQueue.offer(folder.getId());
+			});
+		}
+
+		// 10000개씩 나누어 삭제
+		int batchSize = 10000;
+		for (int i = 0; i < folderIdListForDelete.size(); i += batchSize) {
+			int end = Math.min(folderIdListForDelete.size(), i + batchSize);
+			List<Long> batch = folderIdListForDelete.subList(i, end);
+			folderMetadataRepository.deleteAllByIdInBatch(batch);
+		}
+	}
+
+	@Transactional
+	public void deleteWithDfs(Long folderId, Long userId) {
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
+			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+		if (!folderMetadata.getOwnerId().equals(userId)) {
+			throw ErrorCode.ACCESS_DENIED.baseException();
+		}
+
+		Queue<Long> folderIdListForDelete = new LinkedList<>();
+		Queue<Long> fileIdListForDelete = new LinkedList<>();
+
+		Stack<Long> folderIdStack = new Stack<>();
+		folderIdStack.push(folderMetadata.getId());
+
+		// 재귀 탐색하며 S3 파일 삭제, 삭제해야하는 메타데이터 List에 저장하며 BatchSize 만큼 삭제
+		while (!folderIdStack.isEmpty()) {
+			Long currentFolderId = folderIdStack.pop();
+			// 폴더아이디 삭제 목록에 추가
+			folderIdListForDelete.add(currentFolderId);
+
+			// 하위의 파일 조회
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderIdForUpdate(
+				currentFolderId);
+
+			// 하위 파일의 실제 데이터 삭제 및 삭제해야 할 파일 id 값 저장
+			childFileMetadata.forEach(fileMetadata -> {
+				try {
+					amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUuidFileName());
+					fileIdListForDelete.add(fileMetadata.getId());
+				} catch (AmazonS3Exception e) {
+					e.printStackTrace();
+				}
+			});
+
+			// 하위의 폴더 조회
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
+
+			// 하위 폴더들을 스택에 추가
+			for (FolderMetadata childFolder : childFolders) {
+				folderIdStack.push(childFolder.getId());
+			}
+
+			if (folderIdListForDelete.size() >= BATCH_SIZE) {
+				folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
+			}
+			if (fileIdListForDelete.size() >= BATCH_SIZE) {
+				fileMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
+			}
 		}
 	}
 }
