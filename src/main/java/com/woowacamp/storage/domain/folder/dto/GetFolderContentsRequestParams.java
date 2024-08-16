@@ -36,12 +36,14 @@ public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @No
 					} else {
 						localDateTime = LocalDateTime.now().plusYears(1000);
 					}
+					break;
 				case DATA_SIZE:
 					if (sortDirection.isAscending()) {
 						size = Long.MAX_VALUE;
 					} else {
 						size = 0L;
 					}
+					break;
 				default:
 					throw new IllegalArgumentException("Unsupported sortBy option: " + sortBy);
 			}
