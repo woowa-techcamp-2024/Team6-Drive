@@ -16,3 +16,7 @@ spring:
         format_sql: true
     open-in-view: false
     show-sql: true
+  servlet:
+    multipart:
+      enabled: false
+      resolve-lazily: true
