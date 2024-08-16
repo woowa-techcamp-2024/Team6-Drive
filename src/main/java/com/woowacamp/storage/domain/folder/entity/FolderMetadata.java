@@ -68,7 +68,6 @@ public class FolderMetadata {
 		this.updatedAt = updatedAt;
 		this.parentFolderId = parentFolderId;
 		this.uploadFolderName = uploadFolderName;
-		this.size = 0;
 	}
 
 	public void initOwnerId(Long ownerId) {
