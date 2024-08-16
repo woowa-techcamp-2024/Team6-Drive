@@ -1,5 +1,7 @@
 package com.woowacamp.storage.domain.file.service;
 
+import static com.woowacamp.storage.global.error.ErrorCode.*;
+
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
@@ -9,6 +11,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.woowacamp.storage.domain.file.dto.FileDataDto;
 import com.woowacamp.storage.domain.file.dto.FileMetadataDto;
 import com.woowacamp.storage.domain.file.dto.FormMetadataDto;
 import com.woowacamp.storage.domain.file.dto.PartContext;
@@ -32,6 +38,7 @@ public class S3FileService implements FileService {
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final UserRepository userRepository;
+	private final AmazonS3 amazonS3;
 
 	@Value("${file.request.maxFileSize}")
 	private long MAX_FILE_SIZE;
@@ -171,5 +178,21 @@ public class S3FileService implements FileService {
 			fileType = fileName.substring(index);
 		}
 		return fileType;
+	}
+
+	public FileDataDto downloadByS3(Long fileId, String bucketName, String uuidFileName) {
+		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId).orElseThrow(FILE_NOT_FOUND::baseException);
+		S3Object s3Object = amazonS3.getObject(new GetObjectRequest(bucketName, uuidFileName));
+		return new FileDataDto(FileMetadataDto.of(fileMetadata), s3Object.getObjectContent());
+	}
+
+	public FileMetadata getFileMetadataBy(Long fileId, Long userId) {
+		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
+			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+
+		if (!Objects.equals(fileMetadata.getCreatorId(), userId)) {
+			throw ErrorCode.ACCESS_DENIED.baseException();
+		}
+		return fileMetadata;
 	}
 }

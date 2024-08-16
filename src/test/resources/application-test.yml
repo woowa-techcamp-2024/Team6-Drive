@@ -14,3 +14,12 @@ spring:
       hibernate:
         format_sql: true
     open-in-view: false
+
+file:
+  reader:
+    bufferSize: 8192
+    lineBufferMaxSize: 1048576
+    chunkSize: 5242880
+  request:
+    maxFileSize: 524288000
+    maxStorageSize: 1073741824

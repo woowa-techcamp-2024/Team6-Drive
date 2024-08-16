@@ -61,30 +61,34 @@ class FolderServiceTest {
 		files = new ArrayList<>();
 
 		for (int i = 0; i < 7; i++) {
-			subFolders.add(folderMetadataRepository.save(FolderMetadata.builder()
+			FolderMetadata folderMetadata = folderMetadataRepository.save(FolderMetadata.builder()
 				.rootId(1L)
 				.creatorId(1L)
 				.createdAt(now.minusDays(i))
 				.updatedAt(now)
 				.parentFolderId(parentFolder.getId())
-				.size(1000 * (i + 1))
 				.uploadFolderName("Sub Folder " + (i + 1))
-				.build()));
+				.build());
+			folderMetadata.addSize(1000 * (i + 1));
+			subFolders.add(folderMetadata);
 		}
 
 		for (int i = 0; i < 7; i++) {
-			files.add(fileMetadataRepository.save(FileMetadata.builder()
+			FileMetadata fileMetadata = fileMetadataRepository.save(FileMetadata.builder()
 				.rootId(1L)
 				.uuidFileName("uuidFileName" + i)
 				.creatorId(1L)
 				.fileType("file")
+				.ownerId(1L)
 				.createdAt(now.minusHours(i))
 				.updatedAt(now)
+				.fileSize((long)(500 * (i + 1)))
 				.parentFolderId(parentFolder.getId())
-				.size((long)(500 * (i + 1)))
 				.uploadStatus(UploadStatus.SUCCESS)
 				.uploadFileName("File " + (i + 1))
-				.build()));
+				.build());
+
+			files.add(fileMetadata);
 		}
 	}
 
@@ -108,12 +112,13 @@ class FolderServiceTest {
 				assertTrue(result.folderMetadataList().isEmpty());
 				for (int i = 0; i < result.fileMetadataList().size() - 1; i++) {
 					assertTrue(result.fileMetadataList()
-						.get(i)
-						.getCreatedAt()
-						.isBefore(result.fileMetadataList().get(i + 1).getCreatedAt()) || result.fileMetadataList()
-						.get(i)
-						.getCreatedAt()
-						.equals(result.fileMetadataList().get(i + 1).getCreatedAt()));
+								   .get(i)
+								   .getCreatedAt()
+								   .isBefore(result.fileMetadataList().get(i + 1).getCreatedAt())
+							   || result.fileMetadataList()
+								   .get(i)
+								   .getCreatedAt()
+								   .equals(result.fileMetadataList().get(i + 1).getCreatedAt()));
 				}
 			}
 
@@ -161,11 +166,11 @@ class FolderServiceTest {
 				assertEquals(7, resultFiles.size());
 				for (int i = 0; i < resultFolders.size() - 1; i++) {
 					assertTrue(resultFolders.get(i).getCreatedAt().isAfter(resultFolders.get(i + 1).getCreatedAt())
-						|| resultFolders.get(i).getCreatedAt().equals(resultFolders.get(i + 1).getCreatedAt()));
+							   || resultFolders.get(i).getCreatedAt().equals(resultFolders.get(i + 1).getCreatedAt()));
 				}
 				for (int i = 0; i < resultFiles.size() - 1; i++) {
 					assertTrue(resultFiles.get(i).getCreatedAt().isAfter(resultFiles.get(i + 1).getCreatedAt())
-						|| resultFiles.get(i).getCreatedAt().equals(resultFiles.get(i + 1).getCreatedAt()));
+							   || resultFiles.get(i).getCreatedAt().equals(resultFiles.get(i + 1).getCreatedAt()));
 				}
 			}
 
@@ -185,7 +190,7 @@ class FolderServiceTest {
 					assertTrue(resultFolders.get(i).getSize() <= resultFolders.get(i + 1).getSize());
 				}
 				for (int i = 0; i < resultFiles.size() - 1; i++) {
-					assertTrue(resultFiles.get(i).getSize() <= resultFiles.get(i + 1).getSize());
+					assertTrue(resultFiles.get(i).getFileSize() <= resultFiles.get(i + 1).getFileSize());
 				}
 			}
 
@@ -203,5 +208,3 @@ class FolderServiceTest {
 		}
 	}
 }
-
-

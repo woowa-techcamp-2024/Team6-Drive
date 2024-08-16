@@ -5,9 +5,16 @@ import java.io.InputStream;
 import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,11 +22,13 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.woowacamp.storage.domain.file.dto.FileDataDto;
 import com.woowacamp.storage.domain.file.dto.FileMetadataDto;
 import com.woowacamp.storage.domain.file.dto.FormMetadataDto;
 import com.woowacamp.storage.domain.file.dto.PartContext;
 import com.woowacamp.storage.domain.file.dto.UploadContext;
 import com.woowacamp.storage.domain.file.dto.UploadState;
+import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
 
@@ -285,4 +294,22 @@ public class FileController {
 		}
 		return null;
 	}
+
+	@GetMapping("/download/{fileId}")
+	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId, @RequestParam("userId") Long userId) {
+
+		FileMetadata fileMetadata = s3FileService.getFileMetadataBy(fileId, userId);
+		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, BUCKET_NAME, fileMetadata.getUuidFileName());
+		HttpHeaders headers = new HttpHeaders();
+		// HTTP 응답 헤더에 Content-Type 설정
+		headers.add(HttpHeaders.CONTENT_TYPE, fileMetadata.getFileType());
+		headers.add(HttpHeaders.CONTENT_DISPOSITION,
+			"attachment; filename=" + fileDataDto.fileMetadataDto().uploadFileName());
+
+		return ResponseEntity.ok()
+			.headers(headers)
+			.contentType(MediaType.APPLICATION_OCTET_STREAM)
+			.body(new InputStreamResource(fileDataDto.fileInputStream()));
+	}
+
 }
