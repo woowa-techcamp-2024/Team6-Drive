@@ -54,8 +54,7 @@ public class AsyncMoveFileService {
 
 	@Transactional
 	public void saveFailureLog(Long fileId, Long sourceFolderId, Long targetFolderId) {
-		FileMoveFailureLog failureLog = new FileMoveFailureLog(fileId, sourceFolderId, targetFolderId,
-			LocalDateTime.now());
+		FileMoveFailureLog failureLog = new FileMoveFailureLog(fileId, sourceFolderId, targetFolderId);
 		fileMoveFailureLogRepository.save(failureLog);
 		log.error("Failed to move file {} after 3 attempts. Failure log saved.", fileId);
 	}
