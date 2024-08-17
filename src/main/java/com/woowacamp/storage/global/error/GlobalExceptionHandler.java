@@ -1,13 +1,23 @@
 package com.woowacamp.storage.global.error;
 
+import java.util.Arrays;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.woowacamp.storage.global.response.ErrorResponse;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
@@ -30,6 +40,40 @@ public class GlobalExceptionHandler {
 		CustomException customException = ErrorCode.API_NOT_FOUND.baseException();
 		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(),customException.getMessage());
 		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
+	}
+
+	@ExceptionHandler(MissingServletRequestParameterException.class)
+	public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+		log.error("[Exception] exception info = {}, exception message = {}", e.getClass(), e.getMessage());
+		CustomException customException = ErrorCode.MISSING_REQUIRED_PARAMETER.baseException();
+		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(),customException.getMessage());
+		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
+	}
+
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException e) {
+		log.error("[Exception] exception info = {}, exception message = {}", e.getClass(), e.getMessage());
+		CustomException customException = ErrorCode.INVALID_ARGUMENT_ERROR.baseException();
+		BindingResult bindingResult = new BeanPropertyBindingResult(e, "constraintViolation");
+		for (ConstraintViolation<?> violation : e.getConstraintViolations()) {
+			String errorFieldInfo = violation.getPropertyPath().toString();
+			String[] methodAndField = errorFieldInfo.split("\\.");
+			String fieldName = methodAndField[1];
+			String message = violation.getMessage();
+			bindingResult.addError(new FieldError("constraintViolation", fieldName, message));
+		}
+
+		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(),customException.getMessage(),bindingResult);
+		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
+	}
+
+	@ExceptionHandler(HandlerMethodValidationException.class)
+	public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(MethodArgumentNotValidException e) {
+		CustomException customException = ErrorCode.INVALID_ARGUMENT_ERROR.baseException();
+		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(), customException.getMessage(),
+			e.getBindingResult());
+
+		return ResponseEntity.status(customException.getHttpStatus()).body(errorResponse);
 	}
 
 	@ExceptionHandler(Exception.class)
