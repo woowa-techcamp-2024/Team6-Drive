@@ -28,6 +28,9 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 	Optional<FileMetadata> findByIdAndOwnerId(Long id, Long ownerId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query(value = """
+			select f from FileMetadata f where f.parentFolderId=:parentFolderId
+		""")
 	List<FileMetadata> findByParentFolderIdForUpdate(Long parentFolderId);
 
 	@Modifying

@@ -25,10 +25,16 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 	Optional<Long> findParentFolderIdById(@Param("id") Long id);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query(value = """
+			select f from FolderMetadata f  where f.id = :folderId
+		""")
 	Optional<FolderMetadata> findByIdForUpdate(Long folderId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	List<FolderMetadata> findByParentFolderId(Long parentFolderId);
+	@Query(value = """
+			select f from FolderMetadata f where f.parentFolderId = :parentFolderId
+		""")
+	List<FolderMetadata> findByParentFolderIdForUpdate(Long parentFolderId);
 
 	@Modifying
 	@Query("DELETE FROM FolderMetadata f WHERE f.id IN :ids")
