@@ -95,11 +95,21 @@ public class FolderService {
 			dateTime, size);
 	}
 
+	/**
+	 * 부모 폴더를 삭제중인 경우가 있어서 for update로 부모 폴더를 조회합니다.
+	 * 이미 제거되어 Null을 리턴한 경우 폴더가 생성되지 않습니다.
+	 */
+	@Transactional
 	public void createFolder(CreateFolderReqDto req) {
 		User user = userRepository.findById(req.userId()).orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
 
 		// TODO: 이후 공유 기능이 생길 때, request에 ownerId, creatorId 따로 받아야함
-		validatePermission(req);
+		long parentFolderId = req.parentFolderId();
+		long userId = req.userId();
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(parentFolderId)
+			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+
+		validatePermission(folderMetadata,userId);
 		validateFolderName(req);
 		validateFolder(req);
 		LocalDateTime now = LocalDateTime.now();
@@ -140,8 +150,8 @@ public class FolderService {
 	/**
 	 * 부모 폴더가 요청한 사용자의 폴더인지 확인
 	 */
-	private void validatePermission(CreateFolderReqDto req) {
-		if (!folderMetadataRepository.existsByIdAndCreatorId(req.parentFolderId(), req.userId())) {
+	private void validatePermission(FolderMetadata folderMetadata, long userId) {
+		if(!folderMetadata.getCreatorId().equals(userId)) {
 			throw ErrorCode.NO_PERMISSION.baseException();
 		}
 	}
