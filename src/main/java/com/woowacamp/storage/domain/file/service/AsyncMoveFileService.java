@@ -7,7 +7,6 @@ import java.util.Set;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
@@ -45,7 +44,7 @@ public class AsyncMoveFileService {
 		proxy.saveFailureLog(fileMetadata.getId(), sourceFolderId, targetFolderId);
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional
 	public void moveFileInternal(long sourceFolderId, long targetFolderId, FileMetadata fileMetadata) {
 		Set<FolderMetadata> sourcePath = getPathToRoot(sourceFolderId);
 		Set<FolderMetadata> targetPath = getPathToRoot(targetFolderId);
@@ -53,7 +52,7 @@ public class AsyncMoveFileService {
 		updateFolderPath(sourcePath, targetPath, commonAncestor, fileMetadata.getFileSize());
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional
 	public void saveFailureLog(Long fileId, Long sourceFolderId, Long targetFolderId) {
 		FileMoveFailureLog failureLog = new FileMoveFailureLog(fileId, sourceFolderId, targetFolderId,
 			LocalDateTime.now());
