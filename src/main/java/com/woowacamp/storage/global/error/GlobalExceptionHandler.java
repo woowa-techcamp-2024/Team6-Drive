@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.woowacamp.storage.global.response.ErrorResponse;
 
@@ -22,6 +23,13 @@ public class GlobalExceptionHandler {
 			log.debug(e.getDebugMessage());
 		}
 		return ResponseEntity.status(e.getHttpStatus()).body(errorResponse);
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException e) {
+		CustomException customException = ErrorCode.API_NOT_FOUND.baseException();
+		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(),customException.getMessage());
+		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
 	}
 
 	@ExceptionHandler(Exception.class)
