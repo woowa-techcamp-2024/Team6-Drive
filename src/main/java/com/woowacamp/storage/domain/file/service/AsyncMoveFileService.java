@@ -4,29 +4,61 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.woowacamp.storage.domain.file.entity.FileMetadata;
+import com.woowacamp.storage.domain.file.entity.FileMoveFailureLog;
+import com.woowacamp.storage.domain.file.repository.FileMoveFailureLogRepository;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AsyncMoveFileService {
 
+	private final FileMoveFailureLogRepository fileMoveFailureLogRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
+	private final ApplicationContext applicationContext;
 
-	@Async
-	@Transactional
-	public void moveFile(long sourceFolderId, long targetFolderId, long fileSize) {
+	@Async("threadPoolTaskExecutor")
+	public void moveFile(long sourceFolderId, long targetFolderId, FileMetadata fileMetadata) {
+		AsyncMoveFileService proxy = applicationContext.getBean(AsyncMoveFileService.class);
+		int retryCount = 0;
+		while (retryCount < 3) {
+			try {
+				proxy.moveFileInternal(sourceFolderId, targetFolderId, fileMetadata);
+				log.info("File {} moved successfully", fileMetadata.getId());
+				return;
+			} catch (Exception e) {
+				retryCount++;
+			}
+		}
+		proxy.saveFailureLog(fileMetadata.getId(), sourceFolderId, targetFolderId);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void moveFileInternal(long sourceFolderId, long targetFolderId, FileMetadata fileMetadata) {
 		Set<FolderMetadata> sourcePath = getPathToRoot(sourceFolderId);
 		Set<FolderMetadata> targetPath = getPathToRoot(targetFolderId);
 		FolderMetadata commonAncestor = getCommonAncestor(sourcePath, targetPath);
-		updateFolderPath(sourcePath, targetPath, commonAncestor, fileSize);
+		updateFolderPath(sourcePath, targetPath, commonAncestor, fileMetadata.getFileSize());
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void saveFailureLog(Long fileId, Long sourceFolderId, Long targetFolderId) {
+		FileMoveFailureLog failureLog = new FileMoveFailureLog(fileId, sourceFolderId, targetFolderId,
+			LocalDateTime.now());
+		fileMoveFailureLogRepository.save(failureLog);
+		log.error("Failed to move file {} after 3 attempts. Failure log saved.", fileId);
 	}
 
 	/**
@@ -58,7 +90,7 @@ public class AsyncMoveFileService {
 	}
 
 	/**
-	 * source, target path로부터 공통 폴더를 구하는 함수
+	 * source, target path로부터 공통 조상 폴더를 구하는 함수
 	 */
 	private FolderMetadata getCommonAncestor(Set<FolderMetadata> sourcePath, Set<FolderMetadata> targetPath) {
 		FolderMetadata commonAncestor = null;

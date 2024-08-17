@@ -28,6 +28,14 @@ public class FileService {
 	public void moveFile(Long fileId, FileMoveDto dto) {
 		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+		validateMetadata(dto, fileMetadata);
+		long prevParentFolderId = fileMetadata.getParentFolderId();
+		fileMetadata.updateParentFolderId(dto.targetFolderId());
+
+		asyncMoveFileService.moveFile(prevParentFolderId, dto.targetFolderId(), fileMetadata);
+	}
+
+	private void validateMetadata(FileMoveDto dto, FileMetadata fileMetadata) {
 		if (!fileMetadata.getUploadStatus().equals(UploadStatus.SUCCESS)) {
 			throw ErrorCode.FILE_NOT_FOUND.baseException();
 		}
@@ -35,10 +43,6 @@ public class FileService {
 			fileMetadata.getUploadFileName(), fileMetadata.getFileType())) {
 			throw ErrorCode.FILE_NAME_DUPLICATE.baseException();
 		}
-		long prevParentFolderId = fileMetadata.getParentFolderId();
-		fileMetadata.updateParentFolderId(dto.targetFolderId());
-
-		asyncMoveFileService.moveFile(prevParentFolderId, dto.targetFolderId(), fileMetadata.getFileSize());
 	}
 
 	public FileMetadata getFileMetadataBy(Long fileId, Long userId) {
