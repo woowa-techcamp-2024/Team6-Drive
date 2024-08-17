@@ -3,9 +3,9 @@ package com.woowacamp.storage.domain.folder.service;
 import static com.woowacamp.storage.domain.folder.entity.FolderMetadataFactory.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
@@ -146,61 +146,42 @@ public class FolderService {
 		}
 	}
 
-	// BFS 사용 , todo : 아직 덜 완성
 	@Transactional
-	public void deleteWithBFS(Long folderId, Long userId) {
+	public void deleteFolder(Long folderId, Long userId) {
 		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		if (!folderMetadata.getOwnerId().equals(userId)) {
 			throw ErrorCode.ACCESS_DENIED.baseException();
+		}
+
+		// 부모 폴더 정보가 없으면 루트 폴더를 제거하는 요청으로 예외를 반환한다.
+		if (folderMetadata.getParentFolderId() == null) {
+			throw ErrorCode.INVALID_DELETE_REQUEST.baseException();
 		}
 
 		List<Long> folderIdListForDelete = new ArrayList<>();
+		List<Long> fileIdListForDelete = new ArrayList<>();
 
 		Long parentFolderId = folderMetadata.getId();
 
-		Queue<Long> folderIdQueue = new LinkedList<>();
-		folderIdQueue.offer(parentFolderId);
+		// deleteWithDfs(parentFolderId, folderIdListForDelete, fileIdListForDelete);
+		deleteWithBfs(parentFolderId, folderIdListForDelete, fileIdListForDelete);
 
-		while (!folderIdQueue.isEmpty()) {
-			Long currentFolderId = folderIdQueue.poll();
-
-			folderIdListForDelete.add(currentFolderId);
-
-			// 하위의 파일 삭제
-			List<FileMetadata> childFiles = fileMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
-
-			// 하위의 폴더 조회
-			List<FolderMetadata> childFolder = folderMetadataRepository.findByParentFolderId(currentFolderId);
-
-			// 다음 연산을 위해 Queue 에 offer
-			childFolder.stream().forEach(folder -> {
-				folderIdQueue.offer(folder.getId());
-			});
+		if (!folderIdListForDelete.isEmpty()) {
+			folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
 		}
-
-		// 10000개씩 나누어 삭제
-		int batchSize = 10000;
-		for (int i = 0; i < folderIdListForDelete.size(); i += batchSize) {
-			int end = Math.min(folderIdListForDelete.size(), i + batchSize);
-			List<Long> batch = folderIdListForDelete.subList(i, end);
-			folderMetadataRepository.deleteAllByIdInBatch(batch);
+		if (!fileIdListForDelete.isEmpty()) {
+			fileMetadataRepository.deleteAllByIdInBatch(fileIdListForDelete);
 		}
 	}
 
-	@Transactional
-	public void deleteWithDfs(Long folderId, Long userId) {
-		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
-			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
-		if (!folderMetadata.getOwnerId().equals(userId)) {
-			throw ErrorCode.ACCESS_DENIED.baseException();
-		}
-
-		List<Long> folderIdListForDelete = new LinkedList<>();
-		List<Long> fileIdListForDelete = new LinkedList<>();
-
+	/**
+	 * 재귀호출을 하지 않고 stack을 사용한 DFS를 사용합니다.
+	 * 깊이 우선으로 탐색하여 폴더와 파일을 삭제합니다.
+	 */
+	private void deleteWithDfs(long parentFolderId, List<Long> folderIdListForDelete, List<Long> fileIdListForDelete){
 		Stack<Long> folderIdStack = new Stack<>();
-		folderIdStack.push(folderMetadata.getId());
+		folderIdStack.push(parentFolderId);
 
 		// 재귀 탐색하며 S3 파일 삭제, 삭제해야하는 메타데이터 List에 저장하며 BatchSize 만큼 삭제
 		while (!folderIdStack.isEmpty()) {
@@ -223,18 +204,41 @@ public class FolderService {
 			});
 
 			// 하위의 폴더 조회
-			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
 
 			// 하위 폴더들을 스택에 추가
 			for (FolderMetadata childFolder : childFolders) {
 				folderIdStack.push(childFolder.getId());
 			}
 		}
-		if (!folderIdListForDelete.isEmpty()) {
-			folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
-		}
-		if (!fileIdListForDelete.isEmpty()) {
-			fileMetadataRepository.deleteAllByIdInBatch(fileIdListForDelete);
+	}
+
+	/**
+	 * 이후에 DFS와 비교를 위한 BFS를 활용한 파일 제거 메소드입니다.
+	 */
+	private void deleteWithBfs(long parentFolderId, List<Long> folderIdListForDelete, List<Long> fileIdListForDelete) {
+		Queue<Long> folderIdQueue = new ArrayDeque<>();
+		folderIdQueue.offer(parentFolderId);
+
+		while (!folderIdQueue.isEmpty()) {
+			Long currentFolderId = folderIdQueue.poll();
+
+			folderIdListForDelete.add(currentFolderId);
+
+			// 하위의 파일 삭제
+			List<FileMetadata> childFiles = fileMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
+			childFiles.forEach(fileMetadata -> {
+				amazonS3.deleteObject(BUCKET_NAME,fileMetadata.getUuidFileName());
+				fileIdListForDelete.add(fileMetadata.getId());
+			});
+
+			// 하위의 폴더 조회
+			List<FolderMetadata> childFolder = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
+
+			// 다음 연산을 위해 Queue 에 offer
+			childFolder.stream().forEach(folder -> {
+				folderIdQueue.offer(folder.getId());
+			});
 		}
 	}
 }
