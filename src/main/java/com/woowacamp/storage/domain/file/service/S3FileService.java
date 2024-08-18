@@ -1,7 +1,5 @@
 package com.woowacamp.storage.domain.file.service;
 
-import static com.woowacamp.storage.global.error.ErrorCode.*;
-
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Objects;
@@ -27,13 +25,16 @@ import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
+import static com.woowacamp.storage.global.error.ErrorCode.*;
+
 @Service
 @RequiredArgsConstructor
-public class S3FileService{
+public class S3FileService {
 
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
@@ -77,13 +78,23 @@ public class S3FileService{
 		FileMetadata fileMetadata = fileMetadataRepository.findById(fileMetadataDto.metadataId())
 			.orElseThrow(ErrorCode.FILE_METADATA_NOT_FOUND::baseException);
 
+		// 파일 메타데이터를 먼저 쓴다.
+		int updatedRecordCount = fileMetadataRepository.finalizeMetadata(fileMetadata.getId(), fileSize,
+			UploadStatus.SUCCESS);
+
+		// 1차 메타데이터가 업데이트 되지 않았다면 0을 반환한다.
+		// 0이면 부모 폴더가 삭제된 것이므로 폴더 상태 업데이트 없이 바로 예외를 던진다.
+		if (updatedRecordCount == 0) {
+			throw UNABLE_TO_CREATE_FILE.baseException();
+		}
+
 		LocalDateTime now = LocalDateTime.now();
 		updateFolderMetadataStatus(fileMetadataDto, fileSize, now);
 
-		fileMetadata.updateFileSize(fileSize);
-		fileMetadata.updateFinishUploadStatus();
-		fileMetadata.updateCreatedAt(now);
-		fileMetadata.updateUpdatedAt(now);
+		// fileMetadata.updateFileSize(fileSize);
+		// fileMetadata.updateFinishUploadStatus();
+		// fileMetadata.updateCreatedAt(now);
+		// fileMetadata.updateUpdatedAt(now);
 	}
 
 	/**

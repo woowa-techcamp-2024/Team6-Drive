@@ -28,6 +28,7 @@ public enum ErrorCode {
 	INVALID_DELETE_REQUEST(HttpStatus.BAD_REQUEST, "최상위 폴더는 제거할 수 없습니다."),
 	INVALID_ARGUMENT_ERROR(HttpStatus.BAD_REQUEST, "올바르지 않은 파라미터입니다."),
 	MISSING_REQUIRED_PARAMETER(HttpStatus.BAD_REQUEST, "필수 파라미터가 누락되었습니다."),
+	UNABLE_TO_CREATE_FILE(HttpStatus.BAD_REQUEST, "해당 위치에 파일을 생성할 수 없습니다."),
 	// 500,
 	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
 	FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다.");
