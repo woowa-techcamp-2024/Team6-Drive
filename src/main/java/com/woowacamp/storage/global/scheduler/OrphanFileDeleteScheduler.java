@@ -42,26 +42,27 @@ public class OrphanFileDeleteScheduler {
 	@Scheduled(fixedDelay = DELAY)
 	public void deleteOrphanFile() {
 		List<FileMetadata> orphanFiles = fileMetadataRepository.findOrphanFiles(CommonConstant.ORPHAN_PARENT_ID);
-		if(orphanFiles.isEmpty()){
+		if (orphanFiles.isEmpty()) {
 			return;
 		}
 
-		orphanFiles.stream()
-			.forEach(fileMetadata -> {
-				try{
-					ObjectMetadata objectMetadata = amazonS3.getObjectMetadata(BUCKET_NAME, fileMetadata.getUuidFileName());
-					if (Objects.nonNull(objectMetadata)) {
-						amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUploadFileName());
-						fileMetadataRepository.deleteById(fileMetadata.getId());
-					}
-				}catch (AmazonS3Exception e){
-					log.error("[Amazon S3 Exception] cannot find orphan file in S3, file metadata id = {}",fileMetadata.getId());
+		orphanFiles.forEach(fileMetadata -> {
+			try {
+				ObjectMetadata objectMetadata = amazonS3.getObjectMetadata(BUCKET_NAME,
+					fileMetadata.getUuidFileName());
+				if (Objects.nonNull(objectMetadata)) {
+					amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUploadFileName());
+					fileMetadataRepository.deleteById(fileMetadata.getId());
 				}
-			});
+			} catch (AmazonS3Exception e) {
+				log.error("[Amazon S3 Exception] cannot find orphan file in S3, file metadata id = {}",
+					fileMetadata.getId());
+			}
+		});
 	}
 
 	@Scheduled(fixedDelay = DELAY)
-	public void deleteOrphanFolder(){
+	public void deleteOrphanFolder() {
 		folderMetadataRepository.deleteOrphanFolders(CommonConstant.ORPHAN_PARENT_ID);
 	}
 }

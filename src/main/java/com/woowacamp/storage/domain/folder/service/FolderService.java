@@ -1,7 +1,5 @@
 package com.woowacamp.storage.domain.folder.service;
 
-import static com.woowacamp.storage.domain.folder.entity.FolderMetadataFactory.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -32,6 +30,8 @@ import com.woowacamp.storage.global.constant.CommonConstant;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+
+import static com.woowacamp.storage.domain.folder.entity.FolderMetadataFactory.*;
 
 @Service
 @RequiredArgsConstructor
@@ -109,7 +109,7 @@ public class FolderService {
 		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(parentFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
-		validatePermission(folderMetadata,userId);
+		validatePermission(folderMetadata, userId);
 		validateFolderName(req);
 		validateFolder(req);
 		LocalDateTime now = LocalDateTime.now();
@@ -151,7 +151,7 @@ public class FolderService {
 	 * 부모 폴더가 요청한 사용자의 폴더인지 확인
 	 */
 	private void validatePermission(FolderMetadata folderMetadata, long userId) {
-		if(!folderMetadata.getCreatorId().equals(userId)) {
+		if (!folderMetadata.getCreatorId().equals(userId)) {
 			throw ErrorCode.NO_PERMISSION.baseException();
 		}
 	}
@@ -179,18 +179,14 @@ public class FolderService {
 
 		// deleteWithDfs(parentFolderId, folderIdListForDelete, fileIdListForDelete);
 		// deleteWithBfs(parentFolderId, folderIdListForDelete, fileIdListForDelete);
-		deleteWithoutLock(parentFolderId,folderIdListForDelete, fileIdListForDelete);
-
-		try {
-			Thread.sleep(1000*10);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
+		deleteWithoutLock(parentFolderId, folderIdListForDelete, fileIdListForDelete);
 
 		if (!folderIdListForDelete.isEmpty()) {
 			folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
-			folderMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID,folderIdListForDelete);
-			fileMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID, folderIdListForDelete);
+			folderMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID,
+				folderIdListForDelete);
+			fileMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID,
+				folderIdListForDelete);
 		}
 		if (!fileIdListForDelete.isEmpty()) {
 			fileMetadataRepository.deleteAllByIdInBatch(fileIdListForDelete);
@@ -201,7 +197,7 @@ public class FolderService {
 	 * 재귀호출을 하지 않고 stack을 사용한 DFS를 사용합니다.
 	 * 깊이 우선으로 탐색하여 폴더와 파일을 삭제합니다.
 	 */
-	private void deleteWithDfs(long parentFolderId, List<Long> folderIdListForDelete, List<Long> fileIdListForDelete){
+	private void deleteWithDfs(long parentFolderId, List<Long> folderIdListForDelete, List<Long> fileIdListForDelete) {
 		Stack<Long> folderIdStack = new Stack<>();
 		folderIdStack.push(parentFolderId);
 
@@ -250,7 +246,7 @@ public class FolderService {
 			// 하위의 파일 삭제
 			List<FileMetadata> childFiles = fileMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
 			childFiles.forEach(fileMetadata -> {
-				amazonS3.deleteObject(BUCKET_NAME,fileMetadata.getUuidFileName());
+				amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUuidFileName());
 				fileIdListForDelete.add(fileMetadata.getId());
 			});
 
@@ -269,7 +265,8 @@ public class FolderService {
 	 * 락을 사용하지 않고 DFS로 삭제할 파일과 폴더를 처리하는 메소드입니다.
 	 * 제거할 폴더 pk 리스트, 파일 pk 리스트를 반환합니다.
 	 */
-	private void deleteWithoutLock(long parentFolderId, List<Long> folderIdListForDelete, List<Long> fileIdListForDelete){
+	private void deleteWithoutLock(long parentFolderId, List<Long> folderIdListForDelete,
+		List<Long> fileIdListForDelete) {
 		Stack<Long> folderIdStack = new Stack<>();
 		folderIdStack.push(parentFolderId);
 

@@ -44,11 +44,12 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 
 	@Modifying
 	@Query(value = """
-		update FileMetadata f
-		set f.fileSize = :fileSize, f.uploadStatus = :uploadStatus, f.createdAt = NOW(), f.updatedAt = NOW()
-		where f.id = :fileId
-	""")
-	int finalizeMetadata(@Param("fileId")long fileId, @Param("fileSize") long fileSize, @Param("uploadStatus") UploadStatus uploadStatus);
+			update FileMetadata f
+			set f.fileSize = :fileSize, f.uploadStatus = :uploadStatus, f.createdAt = NOW(), f.updatedAt = NOW()
+			where f.id = :fileId
+		""")
+	int finalizeMetadata(@Param("fileId") long fileId, @Param("fileSize") long fileSize,
+		@Param("uploadStatus") UploadStatus uploadStatus);
 
 	@Modifying
 	@Query(value = """

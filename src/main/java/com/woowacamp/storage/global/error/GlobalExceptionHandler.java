@@ -1,7 +1,5 @@
 package com.woowacamp.storage.global.error;
 
-import java.util.Arrays;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -38,15 +36,16 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(NoResourceFoundException.class)
 	public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException e) {
 		CustomException customException = ErrorCode.API_NOT_FOUND.baseException();
-		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(),customException.getMessage());
+		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(), customException.getMessage());
 		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
 	}
 
 	@ExceptionHandler(MissingServletRequestParameterException.class)
-	public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+	public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
+		MissingServletRequestParameterException e) {
 		log.error("[Exception] exception info = {}, exception message = {}", e.getClass(), e.getMessage());
 		CustomException customException = ErrorCode.MISSING_REQUIRED_PARAMETER.baseException();
-		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(),customException.getMessage());
+		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(), customException.getMessage());
 		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
 	}
 
@@ -63,7 +62,8 @@ public class GlobalExceptionHandler {
 			bindingResult.addError(new FieldError("constraintViolation", fieldName, message));
 		}
 
-		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(),customException.getMessage(),bindingResult);
+		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(), customException.getMessage(),
+			bindingResult);
 		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
 	}
 
