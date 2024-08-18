@@ -57,4 +57,11 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 			where f.parentFolderId in :ids
 		""")
 	int updateParentFolderIdForDelete(@Param("newParentId") long newParentId, @Param("ids") Iterable<Long> ids);
+
+	@Modifying
+	@Query(value = """
+			select f from FileMetadata f
+			where f.parentFolderId = :orphanParentId
+		""")
+	List<FileMetadata> findOrphanFiles(@Param("orphanParentId") int orphanParentId);
 }

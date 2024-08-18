@@ -189,8 +189,8 @@ public class FolderService {
 
 		if (!folderIdListForDelete.isEmpty()) {
 			folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
-			folderMetadataRepository.updateParentFolderIdForDelete(-1,folderIdListForDelete);
-			fileMetadataRepository.updateParentFolderIdForDelete(-1, folderIdListForDelete);
+			folderMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID,folderIdListForDelete);
+			fileMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID, folderIdListForDelete);
 		}
 		if (!fileIdListForDelete.isEmpty()) {
 			fileMetadataRepository.deleteAllByIdInBatch(fileIdListForDelete);

@@ -52,4 +52,11 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 		""")
 	void updateParentFolderIdForDelete(@Param("newParentId") int newParentId,
 		@Param("ids") Iterable<Long> folderIdListForDelete);
+
+	@Modifying
+	@Query(value = """
+			delete from FolderMetadata f
+			where f.parentFolderId = :parentFolderId
+		""")
+	void deleteOrphanFolders(@Param("parentFolderId") long parentFolderId);
 }
