@@ -104,7 +104,7 @@ public class S3FileService {
 	}
 
 	private void validateFileSize(long fileSize, Long rootFolderId) {
-		FolderMetadata rootFolderMetadata = folderMetadataRepository.findById(rootFolderId)
+		FolderMetadata rootFolderMetadata = folderMetadataRepository.findByIdWithLock(rootFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
 		if (fileSize > MAX_FILE_SIZE) {
@@ -121,7 +121,7 @@ public class S3FileService {
 	private void updateFolderMetadataStatus(FileMetadataDto req, long fileSize, LocalDateTime now) {
 		Long parentFolderId = req.parentFolderId();
 		while (parentFolderId != null) {
-			FolderMetadata folderMetadata = folderMetadataRepository.findById(parentFolderId)
+			FolderMetadata folderMetadata = folderMetadataRepository.findByIdWithLock(parentFolderId)
 				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 			folderMetadata.addSize(fileSize);
 			folderMetadata.updateUpdatedAt(now);
