@@ -41,9 +41,9 @@ public class FolderService {
 	private final UserRepository userRepository;
 	private final AsyncMoveFolderService asyncMoveFolderService;
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void checkFolderOwnedBy(long folderId, long userId) {
-		FolderMetadata folderMetadata = folderMetadataRepository.findById(folderId)
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
 		if (!folderMetadata.getOwnerId().equals(userId)) {
@@ -117,9 +117,10 @@ public class FolderService {
 	/**
 	 * currentFolderId로부터 최대 깊이를 구하는 dfs
 	 * 이 과정 중, targetFolderId가 포함돼 있으면 예외 발생
+	 * 깊이를 보는 과정이기 때문에, PENDING 상태의 file이 있어도 상관하지 않음
 	 */
 	private int getLeafDepth(long currentFolderId, int currentDepth, long targetFolderId) {
-		List<Long> childFolderIds = folderMetadataRepository.findIdsByParentFolderId(currentFolderId);
+		List<Long> childFolderIds = folderMetadataRepository.findIdsByParentFolderIdForUpdate(currentFolderId);
 		if (childFolderIds.isEmpty()) {
 			return currentDepth;
 		}
@@ -134,7 +135,7 @@ public class FolderService {
 	}
 
 	/**
-	 * 같은 폴더 내에 동일한 폴더가 있는지 확인
+	 * 같은 폴더 내에 동일한 이름의 폴더가 있는지 확인
 	 */
 	private void validateDuplicatedFolderName(FolderMoveDto dto, FolderMetadata folderMetadata) {
 		if (folderMetadataRepository.existsByParentFolderIdAndUploadFolderName(dto.targetFolderId(),

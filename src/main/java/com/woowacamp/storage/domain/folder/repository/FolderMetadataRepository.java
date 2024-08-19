@@ -16,8 +16,10 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 
 	boolean existsByIdAndCreatorId(Long id, Long creatorId);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	boolean existsByParentFolderIdAndUploadFolderName(Long parentFolderId, String uploadFolderName);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query(value = """
 			select f.parentFolderId from FolderMetadata f where f.id = :id
 		""")
@@ -27,9 +29,10 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 	@Query("SELECT f FROM FolderMetadata f WHERE f.id = :id")
 	Optional<FolderMetadata> findByIdForUpdate(long id);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query(value = """
 			select f.id from FolderMetadata f where f.parentFolderId = :parentFolderId
 		""")
-	List<Long> findIdsByParentFolderId(@Param("parentFolderId") Long parentFolderId);
+	List<Long> findIdsByParentFolderIdForUpdate(@Param("parentFolderId") Long parentFolderId);
 
 }

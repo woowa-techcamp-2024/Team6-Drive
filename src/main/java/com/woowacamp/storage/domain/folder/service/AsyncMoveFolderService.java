@@ -7,6 +7,7 @@ import java.util.Set;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
@@ -43,7 +44,7 @@ public class AsyncMoveFolderService {
 		proxy.saveFailureLog(folderMetadata.getId(), sourceParentFolderId, targetParentFolderId);
 	}
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void moveFolderInternal(long sourceFolderId, long targetFolderId, FolderMetadata folderMetadata) {
 		Set<FolderMetadata> sourcePath = getPathToRoot(sourceFolderId);
 		Set<FolderMetadata> targetPath = getPathToRoot(targetFolderId);

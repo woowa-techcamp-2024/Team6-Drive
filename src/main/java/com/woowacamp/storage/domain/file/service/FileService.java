@@ -3,6 +3,7 @@ package com.woowacamp.storage.domain.file.service;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.dto.FileMoveDto;
@@ -24,9 +25,9 @@ public class FileService {
 	 * FileMetadata의 parentFolderId를 변경한다.
 	 * source folder, target folder의 모든 정보를 수정한다.
 	 */
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void moveFile(Long fileId, FileMoveDto dto) {
-		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
+		FileMetadata fileMetadata = fileMetadataRepository.findByIdForUpdate(fileId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
 		validateMetadata(dto, fileMetadata);
 		long prevParentFolderId = fileMetadata.getParentFolderId();

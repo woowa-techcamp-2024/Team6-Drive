@@ -7,6 +7,7 @@ import java.util.Set;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
@@ -44,7 +45,7 @@ public class AsyncMoveFileService {
 		proxy.saveFailureLog(fileMetadata.getId(), sourceFolderId, targetFolderId);
 	}
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void moveFileInternal(long sourceFolderId, long targetFolderId, FileMetadata fileMetadata) {
 		Set<FolderMetadata> sourcePath = getPathToRoot(sourceFolderId);
 		Set<FolderMetadata> targetPath = getPathToRoot(targetFolderId);
@@ -106,7 +107,7 @@ public class AsyncMoveFileService {
 	 */
 	private Set<FolderMetadata> getPathToRoot(Long folderId) {
 		Set<FolderMetadata> path = new LinkedHashSet<>();
-		FolderMetadata current = folderMetadataRepository.findByIdWithLock(folderId)
+		FolderMetadata current = folderMetadataRepository.findByIdForUpdate(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
 		while (current != null) {
@@ -114,7 +115,7 @@ public class AsyncMoveFileService {
 			if (current.getParentFolderId() == null) {
 				break;
 			}
-			current = folderMetadataRepository.findByIdWithLock(current.getParentFolderId())
+			current = folderMetadataRepository.findByIdForUpdate(current.getParentFolderId())
 				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		}
 		return path;
