@@ -326,7 +326,11 @@ public class MultipartFileController {
 		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, BUCKET_NAME, fileMetadata.getUuidFileName());
 		HttpHeaders headers = new HttpHeaders();
 		// HTTP 응답 헤더에 Content-Type 설정
-		headers.add(HttpHeaders.CONTENT_TYPE, fileMetadata.getFileType());
+		String fileType = fileMetadata.getFileType();
+		if (fileType == null) {
+			fileType = "application/octet-stream";
+		}
+		headers.add(HttpHeaders.CONTENT_TYPE, fileType);
 		headers.add(HttpHeaders.CONTENT_DISPOSITION,
 			"attachment; filename=" + fileDataDto.fileMetadataDto().uploadFileName());
 
