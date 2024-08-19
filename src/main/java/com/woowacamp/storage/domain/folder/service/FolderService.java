@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
@@ -69,9 +70,9 @@ public class FolderService {
 		return new FolderContentsDto(folders, files);
 	}
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void moveFolder(Long sourceFolderId, FolderMoveDto dto) {
-		FolderMetadata folderMetadata = folderMetadataRepository.findByIdWithLock(sourceFolderId)
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(sourceFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		validateMoveFolder(sourceFolderId, dto, folderMetadata);
 		long prevParentFolderId = folderMetadata.getParentFolderId();

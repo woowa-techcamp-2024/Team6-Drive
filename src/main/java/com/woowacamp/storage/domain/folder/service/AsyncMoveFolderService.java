@@ -63,7 +63,7 @@ public class AsyncMoveFolderService {
 	 */
 	private Set<FolderMetadata> getPathToRoot(Long folderId) {
 		Set<FolderMetadata> path = new LinkedHashSet<>();
-		FolderMetadata current = folderMetadataRepository.findByIdWithLock(folderId)
+		FolderMetadata current = folderMetadataRepository.findByIdForUpdate(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
 		while (current != null) {
@@ -71,7 +71,7 @@ public class AsyncMoveFolderService {
 			if (current.getParentFolderId() == null) {
 				break;
 			}
-			current = folderMetadataRepository.findByIdWithLock(current.getParentFolderId())
+			current = folderMetadataRepository.findByIdForUpdate(current.getParentFolderId())
 				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		}
 		return path;
