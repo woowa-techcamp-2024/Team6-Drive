@@ -15,6 +15,7 @@ import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,6 +63,7 @@ public class OrphanFileDeleteScheduler {
 	}
 
 	@Scheduled(fixedDelay = DELAY)
+	@Transactional
 	public void deleteOrphanFolder() {
 		folderMetadataRepository.deleteOrphanFolders(CommonConstant.ORPHAN_PARENT_ID);
 	}

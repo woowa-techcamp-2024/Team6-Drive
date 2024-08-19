@@ -65,4 +65,13 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 			where f.parentFolderId = :orphanParentId
 		""")
 	List<FileMetadata> findOrphanFiles(@Param("orphanParentId") int orphanParentId);
+
+	@Modifying
+	@Query(value = """
+			update FileMetadata f
+			set f.uploadStatus = :uploadStatus
+			where f.id in :fileId
+		""")
+	@Transactional
+	void setMetadataStatusFail(@Param("fileId") long fileId, @Param("uploadStatus") UploadStatus uploadStatus);
 }

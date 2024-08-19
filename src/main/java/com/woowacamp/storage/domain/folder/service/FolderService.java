@@ -1,10 +1,13 @@
 package com.woowacamp.storage.domain.folder.service;
 
+import static com.woowacamp.storage.domain.folder.entity.FolderMetadataFactory.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Stack;
@@ -12,6 +15,7 @@ import java.util.Stack;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.amazonaws.services.s3.AmazonS3;
@@ -27,11 +31,10 @@ import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
-
-import static com.woowacamp.storage.domain.folder.entity.FolderMetadataFactory.*;
 
 @Service
 @RequiredArgsConstructor
@@ -156,7 +159,7 @@ public class FolderService {
 		}
 	}
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void deleteFolder(Long folderId, Long userId) {
 		// FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
 		// 	.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
@@ -173,23 +176,32 @@ public class FolderService {
 		}
 
 		List<Long> folderIdListForDelete = new ArrayList<>();
+		List<Long> fileIdListForUpdate = new ArrayList<>();
 		List<Long> fileIdListForDelete = new ArrayList<>();
 
-		Long parentFolderId = folderMetadata.getId();
-
-		// deleteWithDfs(parentFolderId, folderIdListForDelete, fileIdListForDelete);
+		deleteWithDfs(folderId, folderIdListForDelete, fileIdListForDelete, fileIdListForUpdate);
 		// deleteWithBfs(parentFolderId, folderIdListForDelete, fileIdListForDelete);
-		deleteWithoutLock(parentFolderId, folderIdListForDelete, fileIdListForDelete);
 
 		if (!folderIdListForDelete.isEmpty()) {
 			folderMetadataRepository.deleteAllByIdInBatch(folderIdListForDelete);
 			folderMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID,
-				folderIdListForDelete);
+				fileIdListForUpdate);
 			fileMetadataRepository.updateParentFolderIdForDelete(CommonConstant.ORPHAN_PARENT_ID,
 				folderIdListForDelete);
 		}
 		if (!fileIdListForDelete.isEmpty()) {
 			fileMetadataRepository.deleteAllByIdInBatch(fileIdListForDelete);
+		}
+
+		Long currentFolderId = folderMetadata.getParentFolderId();
+		long fileSize = folderMetadata.getSize();
+		LocalDateTime now = LocalDateTime.now();
+		while (currentFolderId != null) {
+			FolderMetadata currentFolderMetadata = folderMetadataRepository.findByIdForUpdate(currentFolderId)
+				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+			currentFolderMetadata.addSize(-fileSize);
+			currentFolderMetadata.updateUpdatedAt(now);
+			currentFolderId = currentFolderMetadata.getParentFolderId();
 		}
 	}
 
@@ -197,9 +209,10 @@ public class FolderService {
 	 * 재귀호출을 하지 않고 stack을 사용한 DFS를 사용합니다.
 	 * 깊이 우선으로 탐색하여 폴더와 파일을 삭제합니다.
 	 */
-	private void deleteWithDfs(long parentFolderId, List<Long> folderIdListForDelete, List<Long> fileIdListForDelete) {
+	private void deleteWithDfs(long folderId, List<Long> folderIdListForDelete,
+		List<Long> fileIdListForDelete, List<Long> fileIdListForUpdate) {
 		Stack<Long> folderIdStack = new Stack<>();
-		folderIdStack.push(parentFolderId);
+		folderIdStack.push(folderId);
 
 		// 재귀 탐색하며 S3 파일 삭제, 삭제해야하는 메타데이터 List에 저장하며 BatchSize 만큼 삭제
 		while (!folderIdStack.isEmpty()) {
@@ -208,21 +221,29 @@ public class FolderService {
 			folderIdListForDelete.add(currentFolderId);
 
 			// 하위의 파일 조회
-			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderIdForUpdate(
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderId(
 				currentFolderId);
 
 			// 하위 파일의 실제 데이터 삭제 및 삭제해야 할 파일 id 값 저장
 			childFileMetadata.forEach(fileMetadata -> {
+				if (Objects.equals(fileMetadata.getUploadStatus(), UploadStatus.PENDING)) {
+					throw ErrorCode.CANNOT_DELETE_FILE_WHEN_UPLOADING.baseException();
+				}
 				try {
+					// s3에 파일 chunk를 쓰고 있을 수 있기 때문에 우선 조회 후 삭제 작업을 진행한다.
+					amazonS3.getObjectMetadata(BUCKET_NAME, fileMetadata.getUuidFileName());
 					amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUuidFileName());
 					fileIdListForDelete.add(fileMetadata.getId());
+					fileIdListForUpdate.add(fileMetadata.getId());
 				} catch (AmazonS3Exception e) {
 					e.printStackTrace();
+					// 예외가 발생한 경우 해당 파일의 부모 폴더 필드를 -1로 만들어 준다.
+					fileIdListForUpdate.add(fileMetadata.getId());
 				}
 			});
 
 			// 하위의 폴더 조회
-			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
 
 			// 하위 폴더들을 스택에 추가
 			for (FolderMetadata childFolder : childFolders) {
@@ -260,43 +281,4 @@ public class FolderService {
 		}
 	}
 
-	/**
-	 *
-	 * 락을 사용하지 않고 DFS로 삭제할 파일과 폴더를 처리하는 메소드입니다.
-	 * 제거할 폴더 pk 리스트, 파일 pk 리스트를 반환합니다.
-	 */
-	private void deleteWithoutLock(long parentFolderId, List<Long> folderIdListForDelete,
-		List<Long> fileIdListForDelete) {
-		Stack<Long> folderIdStack = new Stack<>();
-		folderIdStack.push(parentFolderId);
-
-		// 재귀 탐색하며 S3 파일 삭제, 삭제해야하는 메타데이터 List에 저장하며 BatchSize 만큼 삭제
-		while (!folderIdStack.isEmpty()) {
-			Long currentFolderId = folderIdStack.pop();
-			// 폴더아이디 삭제 목록에 추가
-			folderIdListForDelete.add(currentFolderId);
-
-			// 하위의 파일 조회
-			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderId(
-				currentFolderId);
-
-			// 하위 파일의 실제 데이터 삭제 및 삭제해야 할 파일 id 값 저장
-			childFileMetadata.forEach(fileMetadata -> {
-				try {
-					amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUuidFileName());
-					fileIdListForDelete.add(fileMetadata.getId());
-				} catch (AmazonS3Exception e) {
-					e.printStackTrace();
-				}
-			});
-
-			// 하위의 폴더 조회
-			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
-
-			// 하위 폴더들을 스택에 추가
-			for (FolderMetadata childFolder : childFolders) {
-				folderIdStack.push(childFolder.getId());
-			}
-		}
-	}
 }

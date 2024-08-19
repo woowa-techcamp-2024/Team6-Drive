@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -30,8 +31,11 @@ import com.woowacamp.storage.domain.file.dto.PartContext;
 import com.woowacamp.storage.domain.file.dto.UploadContext;
 import com.woowacamp.storage.domain.file.dto.UploadState;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
+import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
+import com.woowacamp.storage.global.constant.UploadStatus;
+import com.woowacamp.storage.global.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Positive;
@@ -48,6 +52,7 @@ public class MultipartFileController {
 	private final AmazonS3 amazonS3;
 	private final S3FileService s3FileService;
 	private final FileWriterThreadPool fileWriterThreadPool;
+	private final FileMetadataRepository fileMetadataRepository;
 
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String BUCKET_NAME;
@@ -86,11 +91,20 @@ public class MultipartFileController {
 		PartContext partContext = new PartContext();
 		UploadState state = new UploadState();
 
-		int bytesRead;
-		while ((bytesRead = inputStream.read(buffer)) != -1) {
-			if (processBuffer(buffer, bytesRead, lineBuffer, contentBuffer, context, partContext, state)) {
-				break;
+		try {
+			int bytesRead;
+			while ((bytesRead = inputStream.read(buffer)) != -1) {
+				if (processBuffer(buffer, bytesRead, lineBuffer, contentBuffer, context, partContext, state)) {
+					break;
+				}
 			}
+		} catch (ClientAbortException e) {
+			log.error("[ClientAbortException] 입력 처리 중 예외 발생. error message = {}", e.getMessage());
+			if (context.getFileMetadata() == null) {
+				throw ErrorCode.INVALID_MULTIPART_FORM_DATA.baseException();
+			}
+
+			fileMetadataRepository.setMetadataStatusFail(context.getFileMetadata().metadataId(), UploadStatus.FAIL);
 		}
 	}
 
@@ -116,8 +130,10 @@ public class MultipartFileController {
 			if (line.equals(context.getBoundary()) || line.equals(context.getFinalBoundary())) {
 				// boundary 한 줄을 읽은 경우
 				if (context.isFileRead()) {
+					// final boundary
 					// 메타데이터 쓰기에 성공을 해야 S3에 파일 업로드를 요청한다
-					s3FileService.finalizeMetadata(context.getFileMetadata(), state.getFileSize());
+					s3FileService.finalizeMetadata(context.getFileMetadata(),
+						state.getFileSize() + contentBuffer.size() - 2);
 					processEndOfPart(contentBuffer, context, partContext, state);
 					return true;
 				}
@@ -303,7 +319,8 @@ public class MultipartFileController {
 
 	@GetMapping("/download/{fileId}")
 	@Validated
-	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId,@Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
+	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId,
+		@Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
 
 		FileMetadata fileMetadata = s3FileService.getFileMetadataBy(fileId, userId);
 		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, BUCKET_NAME, fileMetadata.getUuidFileName());
