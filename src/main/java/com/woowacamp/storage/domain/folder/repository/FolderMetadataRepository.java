@@ -29,5 +29,6 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 	List<Long> findIdsByParentFolderId(@Param("parentFolderId") Long parentFolderId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	Optional<FolderMetadata> findById(long id);
+	@Query("SELECT f FROM FolderMetadata f WHERE f.id = :id")
+	Optional<FolderMetadata> findByIdWithLock(long id);
 }

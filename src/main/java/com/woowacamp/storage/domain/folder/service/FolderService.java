@@ -71,7 +71,7 @@ public class FolderService {
 
 	@Transactional
 	public void moveFolder(Long sourceFolderId, FolderMoveDto dto) {
-		FolderMetadata folderMetadata = folderMetadataRepository.findById(sourceFolderId)
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdWithLock(sourceFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		validateMoveFolder(sourceFolderId, dto, folderMetadata);
 		long prevParentFolderId = folderMetadata.getParentFolderId();

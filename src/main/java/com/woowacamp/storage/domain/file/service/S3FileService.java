@@ -46,7 +46,6 @@ public class S3FileService implements FileService {
 	private long MAX_STORAGE_SIZE;
 
 	/**
-	 *
 	 * 1차로 메타데이터를 생성하는 메소드.
 	 * 사용자의 요청 데이터에 있는 사용자 정보, 상위 폴더 정보, 파일 사이즈의 정보를 저장
 	 */
@@ -87,7 +86,6 @@ public class S3FileService implements FileService {
 	}
 
 	/**
-	 *
 	 * 요청 폼 데이터의 fieldFileSize와 실제 파일 크기인 uploadFileSize가 치일한 지 확인하는 메소드
 	 */
 	public void checkMetadata(UploadState state) {
@@ -106,7 +104,7 @@ public class S3FileService implements FileService {
 	}
 
 	private void validateFileSize(long fileSize, Long rootFolderId) {
-		FolderMetadata rootFolderMetadata = folderMetadataRepository.findById(rootFolderId)
+		FolderMetadata rootFolderMetadata = folderMetadataRepository.findByIdWithLock(rootFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
 		if (fileSize > MAX_FILE_SIZE) {
@@ -123,7 +121,7 @@ public class S3FileService implements FileService {
 	private void updateFolderMetadataStatus(FileMetadataDto req, long fileSize, LocalDateTime now) {
 		Long parentFolderId = req.parentFolderId();
 		while (parentFolderId != null) {
-			FolderMetadata folderMetadata = folderMetadataRepository.findById(parentFolderId)
+			FolderMetadata folderMetadata = folderMetadataRepository.findByIdWithLock(parentFolderId)
 				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 			folderMetadata.addSize(fileSize);
 			folderMetadata.updateUpdatedAt(now);
