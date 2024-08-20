@@ -16,7 +16,6 @@ public enum ErrorCode {
 	WRONG_FOLDER_CONTENTS_SORT_FIELD(HttpStatus.BAD_REQUEST, "잘못된 폴더 컨텐츠 정렬 기준입니다."),
 	WRONG_PAGE_SIZE(HttpStatus.BAD_REQUEST, "잘못된 페이지 사이즈입니다."),
 	INVALID_FILE_NAME(HttpStatus.BAD_REQUEST, "파일 이름이 부적절합니다."),
-	NO_PERMISSION(HttpStatus.FORBIDDEN, "권한이 부족합니다."),
 	EXCEED_MAX_FILE_SIZE(HttpStatus.BAD_REQUEST, "요청 가능한 파일 크기를 초과했습니다."),
 	EXCEED_MAX_STORAGE_SIZE(HttpStatus.BAD_REQUEST, "최대 저장 공간 크기를 초과했습니다."),
 	INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "올바르지 않은 입력입니다."),
