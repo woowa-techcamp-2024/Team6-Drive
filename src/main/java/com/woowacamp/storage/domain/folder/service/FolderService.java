@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -24,9 +24,11 @@ import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
 import com.woowacamp.storage.domain.folder.dto.request.FolderMoveDto;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
+import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -39,7 +41,7 @@ public class FolderService {
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final UserRepository userRepository;
-	private final AsyncMoveFolderService asyncMoveFolderService;
+	private final FolderSearchUtil folderSearchUtil;
 
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void checkFolderOwnedBy(long folderId, long userId) {
@@ -75,10 +77,12 @@ public class FolderService {
 		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(sourceFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		validateMoveFolder(sourceFolderId, dto, folderMetadata);
-		long prevParentFolderId = folderMetadata.getParentFolderId();
-		folderMetadata.updateParentFolderId(dto.targetFolderId());
 
-		asyncMoveFolderService.moveFolder(prevParentFolderId, dto.targetFolderId(), folderMetadata);
+		Set<FolderMetadata> sourcePath = folderSearchUtil.getPathToRoot(sourceFolderId);
+		Set<FolderMetadata> targetPath = folderSearchUtil.getPathToRoot(dto.targetFolderId());
+		FolderMetadata commonAncestor = folderSearchUtil.getCommonAncestor(sourcePath, targetPath);
+		folderSearchUtil.updateFolderPath(sourcePath, targetPath, commonAncestor, folderMetadata.getSize());
+		folderMetadata.updateParentFolderId(dto.targetFolderId());
 	}
 
 	private void validateMoveFolder(Long sourceFolderId, FolderMoveDto dto, FolderMetadata folderMetadata) {
@@ -108,7 +112,7 @@ public class FolderService {
 	 */
 	private void validateFolderDepth(Long sourceFolderId, FolderMoveDto dto) {
 		int sourceFolderLeafDepth = getLeafDepth(sourceFolderId, 1, dto.targetFolderId());
-		int targetFolderCurrentDepth = getFolderDepth(dto.targetFolderId());
+		int targetFolderCurrentDepth = folderSearchUtil.getFolderDepth(dto.targetFolderId());
 		if (sourceFolderLeafDepth + targetFolderCurrentDepth > MAX_FOLDER_DEPTH) {
 			throw ErrorCode.EXCEED_MAX_FOLDER_DEPTH.baseException();
 		}
@@ -121,6 +125,9 @@ public class FolderService {
 	 */
 	private int getLeafDepth(long currentFolderId, int currentDepth, long targetFolderId) {
 		List<Long> childFolderIds = folderMetadataRepository.findIdsByParentFolderIdForUpdate(currentFolderId);
+		if (isExistsPendingFile(currentFolderId)) {
+			throw ErrorCode.CANNOT_MOVE_FOLDER_WHEN_UPLOADING.baseException();
+		}
 		if (childFolderIds.isEmpty()) {
 			return currentDepth;
 		}
@@ -132,6 +139,11 @@ public class FolderService {
 			result = Math.max(result, getLeafDepth(childFolderId, currentDepth + 1, targetFolderId));
 		}
 		return result;
+	}
+
+	private boolean isExistsPendingFile(long currentFolderId) {
+		return fileMetadataRepository.findByParentFolderIdForUpdate(currentFolderId).stream()
+			.anyMatch(childFile -> childFile.getUploadStatus() == UploadStatus.PENDING);
 	}
 
 	/**
@@ -176,26 +188,9 @@ public class FolderService {
 			req.uploadFolderName())) {
 			throw ErrorCode.INVALID_FILE_NAME.baseException();
 		}
-		if (getFolderDepth(req.parentFolderId()) >= MAX_FOLDER_DEPTH) {
+		if (folderSearchUtil.getFolderDepth(req.parentFolderId()) >= MAX_FOLDER_DEPTH) {
 			throw ErrorCode.EXCEED_MAX_FOLDER_DEPTH.baseException();
 		}
-	}
-
-	/**
-	 * 폴더를 무제한 생성하는 것을 방지하기 위해 깊이를 구하는 메소드
-	 */
-	private int getFolderDepth(long folderId) {
-		int depth = 1;
-		Long currentFolderId = folderId;
-		while (true) {
-			Optional<Long> parentFolderIdById = folderMetadataRepository.findParentFolderIdById(currentFolderId);
-			if (parentFolderIdById.isEmpty()) {
-				break;
-			}
-			currentFolderId = parentFolderIdById.get();
-			depth++;
-		}
-		return depth;
 	}
 
 	/**

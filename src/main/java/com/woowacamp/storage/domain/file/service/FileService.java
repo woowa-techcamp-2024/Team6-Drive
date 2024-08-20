@@ -1,6 +1,7 @@
 package com.woowacamp.storage.domain.file.service;
 
 import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -9,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.woowacamp.storage.domain.file.dto.FileMoveDto;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
+import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
+import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
@@ -19,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class FileService {
 
 	private final FileMetadataRepository fileMetadataRepository;
-	private final AsyncMoveFileService asyncMoveFileService;
+	private final FolderSearchUtil folderSearchUtil;
 
 	/**
 	 * FileMetadata의 parentFolderId를 변경한다.
@@ -30,14 +33,16 @@ public class FileService {
 		FileMetadata fileMetadata = fileMetadataRepository.findByIdForUpdate(fileId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
 		validateMetadata(dto, fileMetadata);
-		long prevParentFolderId = fileMetadata.getParentFolderId();
-		fileMetadata.updateParentFolderId(dto.targetFolderId());
 
-		asyncMoveFileService.moveFile(prevParentFolderId, dto.targetFolderId(), fileMetadata);
+		Set<FolderMetadata> sourcePath = folderSearchUtil.getPathToRoot(fileMetadata.getParentFolderId());
+		Set<FolderMetadata> targetPath = folderSearchUtil.getPathToRoot(dto.targetFolderId());
+		FolderMetadata commonAncestor = folderSearchUtil.getCommonAncestor(sourcePath, targetPath);
+		folderSearchUtil.updateFolderPath(sourcePath, targetPath, commonAncestor, fileMetadata.getFileSize());
+		fileMetadata.updateParentFolderId(dto.targetFolderId());
 	}
 
 	private void validateMetadata(FileMoveDto dto, FileMetadata fileMetadata) {
-		if (!fileMetadata.getUploadStatus().equals(UploadStatus.SUCCESS)) {
+		if (fileMetadata.getUploadStatus() != UploadStatus.SUCCESS) {
 			throw ErrorCode.FILE_NOT_FOUND.baseException();
 		}
 		if (fileMetadataRepository.existsByParentFolderIdAndUploadFileNameAndFileType(dto.targetFolderId(),

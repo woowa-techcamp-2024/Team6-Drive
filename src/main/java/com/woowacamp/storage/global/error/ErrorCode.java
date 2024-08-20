@@ -25,6 +25,7 @@ public enum ErrorCode {
 	INVALID_FILE_SIZE(HttpStatus.BAD_REQUEST, "요청 파일 사이즈와 실제 파일 사이즈가 일치하지 않습니다."),
 	FILE_NAME_DUPLICATE(HttpStatus.CONFLICT, "파일 또는 폴더 이름이 중복되었습니다."),
 	FOLDER_MOVE_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "올바르지 않은 폴더 이동입니다."),
+	CANNOT_MOVE_FOLDER_WHEN_UPLOADING(HttpStatus.BAD_REQUEST, "파일 업로드 중에 폴더 이동할 수 없습니다."),
 	// 500,
 	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.");
 	private final HttpStatus status;
