@@ -45,8 +45,7 @@ public class FileMetadata {
 	@NotNull
 	private Long ownerId;
 
-	@Column(name = "file_type", columnDefinition = "VARCHAR(50) NOT NULL")
-	@NotNull
+	@Column(name = "file_type", columnDefinition = "VARCHAR(50)")
 	private String fileType;
 
 	@Column(name = "created_at", columnDefinition = "TIMESTAMP NOT NULL")

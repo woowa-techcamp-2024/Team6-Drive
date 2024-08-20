@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.amazonaws.services.s3.AmazonS3;
@@ -27,13 +28,14 @@ import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class S3FileService implements FileService {
+public class S3FileService {
 
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
@@ -72,18 +74,27 @@ public class S3FileService implements FileService {
 	/**
 	 * 사용자 정보는 로그인을 했다고 가정하고 사용했습니다.
 	 */
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void finalizeMetadata(FileMetadataDto fileMetadataDto, long fileSize) {
 		FileMetadata fileMetadata = fileMetadataRepository.findById(fileMetadataDto.metadataId())
 			.orElseThrow(ErrorCode.FILE_METADATA_NOT_FOUND::baseException);
 
+		// 파일 메타데이터를 먼저 쓴다.
+		fileMetadataRepository.finalizeMetadata(fileMetadata.getId(), fileSize, UploadStatus.SUCCESS);
+
+		// 1차 메타데이터가 업데이트 되지 않았다면 0을 반환한다.
+		// 0이면 부모 폴더가 삭제된 것이므로 폴더 상태 업데이트 없이 바로 예외를 던진다.
+		// if (updatedRecordCount == 0) {
+		// 	throw UNABLE_TO_CREATE_FILE.baseException();
+		// }
+
 		LocalDateTime now = LocalDateTime.now();
 		updateFolderMetadataStatus(fileMetadataDto, fileSize, now);
 
-		fileMetadata.updateFileSize(fileSize);
-		fileMetadata.updateFinishUploadStatus();
-		fileMetadata.updateCreatedAt(now);
-		fileMetadata.updateUpdatedAt(now);
+		// fileMetadata.updateFileSize(fileSize);
+		// fileMetadata.updateFinishUploadStatus();
+		// fileMetadata.updateCreatedAt(now);
+		// fileMetadata.updateUpdatedAt(now);
 	}
 
 	/**
@@ -98,11 +109,14 @@ public class S3FileService implements FileService {
 		}
 	}
 
+	/**
+	 * validateParentFolder를 먼저 호출해야 부모 폴더에 락이 걸려서 같은 파일 이름으로 동시에 써지지 않는다.
+	 */
 	private void validateRequest(FormMetadataDto formMetadataDto, PartContext partContext, User user, String fileName,
 		String fileType) {
 		validateFileSize(formMetadataDto.getFileSize(), user.getRootFolderId());
-		validateFile(partContext, formMetadataDto.getParentFolderId(), fileName, fileType);
 		validateParentFolder(formMetadataDto.getParentFolderId(), formMetadataDto.getUserId());
+		validateFile(partContext, formMetadataDto.getParentFolderId(), fileName, fileType);
 	}
 
 	private void validateFileSize(long fileSize, Long rootFolderId) {
@@ -119,12 +133,16 @@ public class S3FileService implements FileService {
 
 	/**
 	 * 현재 폴더에서 루트 폴더까지 모든 폴더에 대한 size, updatedAt을 갱신
+	 * 중간에 새로운 파일들이 써질 수 있으니 최상위 폴더까지의 락을 획득 후 작업을 진행한다.
 	 */
 	private void updateFolderMetadataStatus(FileMetadataDto req, long fileSize, LocalDateTime now) {
 		Long parentFolderId = req.parentFolderId();
 		while (parentFolderId != null) {
-			FolderMetadata folderMetadata = folderMetadataRepository.findById(parentFolderId)
+			FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(parentFolderId)
 				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+			if (folderMetadata.getSize() + fileSize > MAX_STORAGE_SIZE) {
+				throw ErrorCode.EXCEED_MAX_STORAGE_SIZE.baseException();
+			}
 			folderMetadata.addSize(fileSize);
 			folderMetadata.updateUpdatedAt(now);
 			parentFolderId = folderMetadata.getParentFolderId();
@@ -135,7 +153,7 @@ public class S3FileService implements FileService {
 	 * 요청한 parentFolderId가 자신의 폴더에 대한 id인지 확인
 	 */
 	private void validateParentFolder(long parentFolderId, long userId) {
-		FolderMetadata folderMetadata = folderMetadataRepository.findById(parentFolderId)
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(parentFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		if (!Objects.equals(folderMetadata.getCreatorId(), userId)) {
 			throw ErrorCode.NO_PERMISSION.baseException();
