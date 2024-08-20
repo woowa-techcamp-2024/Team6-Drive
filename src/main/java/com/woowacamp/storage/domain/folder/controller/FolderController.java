@@ -43,7 +43,7 @@ public class FolderController {
 			request.sortBy(), request.sortDirection(), request.localDateTime(), request.size());
 	}
 
-	@DeleteMapping("{folderId}")
+	@DeleteMapping("/{folderId}")
 	@ResponseStatus(HttpStatus.OK)
 	public void delete(@PathVariable Long folderId, @RequestParam Long userId) {
 		folderService.deleteFolder(folderId, userId);
