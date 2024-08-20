@@ -161,11 +161,9 @@ public class FolderService {
 
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void deleteFolder(Long folderId, Long userId) {
-		// FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
-		// 	.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
-
-		FolderMetadata folderMetadata = folderMetadataRepository.findById(folderId)
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+
 		if (!folderMetadata.getOwnerId().equals(userId)) {
 			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
