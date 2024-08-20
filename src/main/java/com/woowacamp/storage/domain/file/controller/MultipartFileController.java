@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -34,7 +35,6 @@ import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
-import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -99,12 +99,14 @@ public class MultipartFileController {
 				}
 			}
 		} catch (ClientAbortException e) {
-			log.error("[ClientAbortException] 입력 처리 중 예외 발생. error message = {}", e.getMessage());
+			log.error("[ClientAbortException] 입력 처리 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
 			if (context.getFileMetadata() == null) {
 				throw ErrorCode.INVALID_MULTIPART_FORM_DATA.baseException();
 			}
 
-			fileMetadataRepository.setMetadataStatusFail(context.getFileMetadata().metadataId(), UploadStatus.FAIL);
+			fileMetadataRepository.deleteById(context.getFileMetadata().metadataId());
+		} catch (AmazonS3Exception e) {
+			log.error("[AmazonS3Exception] 입력 예외로 완성되지 않은 S3 파일 제거 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
 		}
 	}
 
@@ -150,8 +152,9 @@ public class MultipartFileController {
 					context.updateFileMetadata(fileMetadataDto);
 					context.updateIsFileRead();
 					partContext.setUploadFileName(fileMetadataDto.uuid());
-					state.setInitResponse(
-						initializeFileUpload(partContext.getUploadFileName(), partContext.getCurrentContentType()));
+					InitiateMultipartUploadResult initiateMultipartUploadResult = initializeFileUpload(
+						partContext.getUploadFileName(), partContext.getCurrentContentType());
+					state.setInitResponse(initiateMultipartUploadResult);
 					state.initPartEtag(partContext.getUploadFileName());
 					state.setFileMetadataDto(fileMetadataDto);
 				}
@@ -219,6 +222,7 @@ public class MultipartFileController {
 		metadata.setContentType(contentType);
 		InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(BUCKET_NAME,
 			fileName).withObjectMetadata(metadata);
+
 		return amazonS3.initiateMultipartUpload(initRequest);
 	}
 
