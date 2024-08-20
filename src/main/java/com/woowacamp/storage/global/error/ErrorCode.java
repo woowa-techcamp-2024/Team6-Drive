@@ -32,6 +32,7 @@ public enum ErrorCode {
 	UNABLE_TO_CREATE_FILE(HttpStatus.BAD_REQUEST, "해당 위치에 파일을 생성할 수 없습니다."),
 	CANNOT_DELETE_FILE_WHEN_UPLOADING(HttpStatus.BAD_REQUEST, "파일 업로드 중에 폴더 삭제를 할 수 없습니다."),
 	INVALID_MULTIPART_FORM_DATA(HttpStatus.BAD_REQUEST, "올바른 데이터 형식으로 요청을 보내주세요."),
+	DUPLICATED_SHARED_LINK(HttpStatus.CONFLICT, "공유 링크 생성에 실패했습니다. 잠시 후에 다시 시도해 주세요."),
 	// 500,
 	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
 	FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다.");

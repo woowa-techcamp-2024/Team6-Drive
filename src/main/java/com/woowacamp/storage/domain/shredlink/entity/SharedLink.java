@@ -8,14 +8,20 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(
-	name = "shared_link"
+	name = "shared_link",
+	uniqueConstraints = {
+		@UniqueConstraint(columnNames = {"shared_link_url"}),
+		@UniqueConstraint(columnNames = {"shared_token"})
+	}
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -30,15 +36,43 @@ public class SharedLink {
 	@NotNull
 	private LocalDateTime createdAt;
 
-	@Column(name = "metadata_id", columnDefinition = "BIGINT NOT NULL")
+	// 공유하는 링크
+	@Column(name = "shared_link_url", columnDefinition = "VARCHAR(300) NOT NULL")
 	@NotNull
-	private Long metadataId;
+	private String sharedLinkUrl;
 
-	@Column(name = "is_file_link", columnDefinition = "TINYINT NOT NULL")
+	// 공유하는 사용자의 pk
+	@Column(name = "shared_user_id", columnDefinition = "BIGINT NOT NULL")
 	@NotNull
-	private Boolean isFileLink;
+	private Long sharedUserId;
+
+	// 공유 받은 사용자를 인증할 토큰(쿠키)
+	@Column(name = "shared_token", columnDefinition = "VARCHAR(100) NOT NULL")
+	@NotNull
+	private String sharedToken;
 
 	@Column(name = "expired_at", columnDefinition = "TIMESTAMP NOT NULL")
 	@NotNull
 	private LocalDateTime expiredAt;
+
+	@Column(name = "is_file", columnDefinition = "TINYINT(1) NOT NULL")
+	@NotNull
+	private Boolean isFile;
+
+	@Column(name = "target_id", columnDefinition = "BIGINT NOT NULL")
+	@NotNull
+	private Long targetId;
+
+	@Builder
+	public SharedLink(Long id, LocalDateTime createdAt, String sharedLinkUrl, Long sharedUserId, String sharedToken,
+		LocalDateTime expiredAt, Boolean isFile, Long targetId) {
+		this.id = id;
+		this.createdAt = createdAt;
+		this.sharedLinkUrl = sharedLinkUrl;
+		this.sharedUserId = sharedUserId;
+		this.sharedToken = sharedToken;
+		this.expiredAt = expiredAt;
+		this.isFile = isFile;
+		this.targetId = targetId;
+	}
 }

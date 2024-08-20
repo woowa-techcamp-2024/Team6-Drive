@@ -20,3 +20,6 @@ spring:
     multipart:
       enabled: false
       resolve-lazily: true
+
+share:
+  server-domain: localhost:8080
