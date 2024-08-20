@@ -27,7 +27,6 @@ public class FileController {
 	@PatchMapping("/{fileId}")
 	public void moveFile(@PathVariable Long fileId, @RequestBody FileMoveDto dto) {
 		fileService.getFileMetadataBy(fileId, dto.userId());
-		folderService.checkFolderOwnedBy(dto.targetFolderId(), dto.userId());
 		fileService.moveFile(fileId, dto);
 	}
 

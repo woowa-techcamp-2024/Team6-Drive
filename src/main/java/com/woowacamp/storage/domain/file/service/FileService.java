@@ -16,6 +16,7 @@ import com.woowacamp.storage.domain.file.dto.FileMoveDto;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
+import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
@@ -27,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class FileService {
 
 	private final FileMetadataRepository fileMetadataRepository;
+	private final FolderMetadataRepository folderMetadataRepository;
 	private final FolderSearchUtil folderSearchUtil;
 	private final AmazonS3 amazonS3;
 	@Value("${cloud.aws.credentials.bucketName}")
@@ -38,6 +40,11 @@ public class FileService {
 	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void moveFile(Long fileId, FileMoveDto dto) {
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(dto.targetFolderId())
+			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+		if (!folderMetadata.getOwnerId().equals(dto.userId())) {
+			throw ErrorCode.ACCESS_DENIED.baseException();
+		}
 		FileMetadata fileMetadata = fileMetadataRepository.findByIdForUpdate(fileId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
 		validateMetadata(dto, fileMetadata);

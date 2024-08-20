@@ -129,7 +129,6 @@ public class FolderService {
 	/**
 	 * currentFolderId로부터 최대 깊이를 구하는 dfs
 	 * 이 과정 중, targetFolderId가 포함돼 있으면 예외 발생
-	 * 깊이를 보는 과정이기 때문에, PENDING 상태의 file이 있어도 상관하지 않음
 	 */
 	private int getLeafDepth(long currentFolderId, int currentDepth, long targetFolderId) {
 		List<Long> childFolderIds = folderMetadataRepository.findIdsByParentFolderIdForUpdate(currentFolderId);
