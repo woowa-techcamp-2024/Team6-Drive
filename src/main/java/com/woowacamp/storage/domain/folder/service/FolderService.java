@@ -159,6 +159,12 @@ public class FolderService {
 		}
 	}
 
+	/**
+	 * 폴더 삭제 메소드입니다.
+	 * 하위 폴더 및 파일까지 탐색하여 삭제를 진행합니다.
+	 * deleteWithDfs 메소드를 통해 삭제해야 할 pk를 받아옵니다.
+	 * 이후 pk 데이터를 바탕으로 폴더 및 파일 삭제와 S3에 미처 업로드가 되지 못한 파일의 부모 폴더의 값을 -1로 변경합니다.
+	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void deleteFolder(Long folderId, Long userId) {
 		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
