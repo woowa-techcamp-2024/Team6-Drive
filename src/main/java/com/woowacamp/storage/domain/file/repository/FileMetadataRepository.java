@@ -80,4 +80,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 		""")
 	@Transactional
 	void setMetadataStatusFail(@Param("fileId") long fileId, @Param("uploadStatus") UploadStatus uploadStatus);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	boolean existsByParentFolderIdAndUploadStatus(Long parentFolderId, UploadStatus uploadStatus);
 }

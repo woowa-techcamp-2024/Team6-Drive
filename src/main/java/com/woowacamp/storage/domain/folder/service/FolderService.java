@@ -150,8 +150,7 @@ public class FolderService {
 	}
 
 	private boolean isExistsPendingFile(long currentFolderId) {
-		return fileMetadataRepository.findByParentFolderIdForUpdate(currentFolderId).stream()
-			.anyMatch(childFile -> childFile.getUploadStatus() == UploadStatus.PENDING);
+		return fileMetadataRepository.existsByParentFolderIdAndUploadStatus(currentFolderId, UploadStatus.PENDING);
 	}
 
 	/**
