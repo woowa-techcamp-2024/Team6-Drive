@@ -17,18 +17,24 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 
 	boolean existsByIdAndCreatorId(Long id, Long creatorId);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	boolean existsByParentFolderIdAndUploadFolderName(Long parentFolderId, String uploadFolderName);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query(value = """
 			select f.parentFolderId from FolderMetadata f where f.id = :id
 		""")
 	Optional<Long> findParentFolderIdById(@Param("id") Long id);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT f FROM FolderMetadata f WHERE f.id = :id")
+	Optional<FolderMetadata> findByIdForUpdate(long id);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query(value = """
-			select f from FolderMetadata f  where f.id = :folderId
+			select f.id from FolderMetadata f where f.parentFolderId = :parentFolderId
 		""")
-	Optional<FolderMetadata> findByIdForUpdate(Long folderId);
+	List<Long> findIdsByParentFolderIdForUpdate(@Param("parentFolderId") Long parentFolderId);
 
 	// 부모 폴더에 락을 걸고 하위 폴더를 조회하는 메소드
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -56,7 +56,6 @@ public class FolderMetadata {
 	@Column(name = "folder_size", columnDefinition = "BIGINT NOT NULL DEFAULT 0")
 	private long size;
 
-
 	@Builder
 	private FolderMetadata(Long id, Long rootId, Long ownerId, Long creatorId, LocalDateTime createdAt,
 		LocalDateTime updatedAt, Long parentFolderId, String uploadFolderName) {
@@ -84,5 +83,9 @@ public class FolderMetadata {
 
 	public void updateUpdatedAt(LocalDateTime now) {
 		this.updatedAt = now;
+	}
+
+	public void updateParentFolderId(Long parentFolderId) {
+		this.parentFolderId = parentFolderId;
 	}
 }

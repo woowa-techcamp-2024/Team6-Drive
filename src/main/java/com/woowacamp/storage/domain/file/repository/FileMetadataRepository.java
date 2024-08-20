@@ -26,6 +26,12 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 	void deleteByUuidFileName(String uuidFileName);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query(value = """
+			select f from FileMetadata f where f.id = :id
+		""")
+	Optional<FileMetadata> findByIdForUpdate(@Param("id") Long id);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	Optional<FileMetadata> findByIdAndOwnerId(Long id, Long ownerId);
 
 	// 부모 폴더에 락을 걸고 조회하는 메소드
@@ -74,4 +80,6 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 		""")
 	@Transactional
 	void setMetadataStatusFail(@Param("fileId") long fileId, @Param("uploadStatus") UploadStatus uploadStatus);
+
+	boolean existsByParentFolderIdAndUploadStatus(Long parentFolderId, UploadStatus uploadStatus);
 }

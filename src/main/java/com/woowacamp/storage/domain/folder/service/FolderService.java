@@ -1,6 +1,7 @@
 package com.woowacamp.storage.domain.folder.service;
 
 import static com.woowacamp.storage.domain.folder.entity.FolderMetadataFactory.*;
+import static com.woowacamp.storage.global.constant.CommonConstant.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
@@ -8,8 +9,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.Stack;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +27,10 @@ import com.woowacamp.storage.domain.folder.dto.CursorType;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsDto;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
+import com.woowacamp.storage.domain.folder.dto.request.FolderMoveDto;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
+import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
@@ -43,23 +46,14 @@ public class FolderService {
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final UserRepository userRepository;
+	private final FolderSearchUtil folderSearchUtil;
 	private final AmazonS3 amazonS3;
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String BUCKET_NAME;
 
-	/**
-	 * 폴더 이름에 금칙어가 있는지 확인
-	 */
-	private static void validateFolderName(CreateFolderReqDto req) {
-		if (Arrays.stream(CommonConstant.FILE_NAME_BLACK_LIST)
-			.anyMatch(character -> req.uploadFolderName().indexOf(character) != -1)) {
-			throw ErrorCode.INVALID_FILE_NAME.baseException();
-		}
-	}
-
-	@Transactional(readOnly = true)
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void checkFolderOwnedBy(long folderId, long userId) {
-		FolderMetadata folderMetadata = folderMetadataRepository.findById(folderId)
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(folderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
 		if (!folderMetadata.getOwnerId().equals(userId)) {
@@ -84,6 +78,88 @@ public class FolderService {
 		}
 
 		return new FolderContentsDto(folders, files);
+	}
+
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public void moveFolder(Long sourceFolderId, FolderMoveDto dto) {
+		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(sourceFolderId)
+			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+		validateMoveFolder(sourceFolderId, dto, folderMetadata);
+
+		Set<FolderMetadata> sourcePath = folderSearchUtil.getPathToRoot(sourceFolderId);
+		Set<FolderMetadata> targetPath = folderSearchUtil.getPathToRoot(dto.targetFolderId());
+		FolderMetadata commonAncestor = folderSearchUtil.getCommonAncestor(sourcePath, targetPath);
+		folderSearchUtil.updateFolderPath(sourcePath, targetPath, commonAncestor, folderMetadata.getSize());
+		folderMetadata.updateParentFolderId(dto.targetFolderId());
+	}
+
+	private void validateMoveFolder(Long sourceFolderId, FolderMoveDto dto, FolderMetadata folderMetadata) {
+		validateInvalidMove(dto, folderMetadata);
+		validateFolderDepth(sourceFolderId, dto);
+		validateDuplicatedFolderName(dto, folderMetadata);
+	}
+
+	/**
+	 * root folder를 이동하려하는지 확인
+	 * 같은 폴더 내에서 이동하려하는지 확인
+	 */
+	private void validateInvalidMove(FolderMoveDto dto, FolderMetadata folderMetadata) {
+		if (Objects.equals(folderMetadata.getId(), dto.targetFolderId())) {
+			throw ErrorCode.FOLDER_MOVE_NOT_AVAILABLE.baseException();
+		}
+		if (folderMetadata.getParentFolderId() == null) {
+			throw ErrorCode.FOLDER_MOVE_NOT_AVAILABLE.baseException();
+		}
+		if (Objects.equals(folderMetadata.getParentFolderId(), dto.targetFolderId())) {
+			throw ErrorCode.FOLDER_MOVE_NOT_AVAILABLE.baseException();
+		}
+	}
+
+	/**
+	 * sourceFolder의 최대 깊이 + 이동하려는 폴더의 깊이가 50을 넘는지 확인
+	 */
+	private void validateFolderDepth(Long sourceFolderId, FolderMoveDto dto) {
+		int sourceFolderLeafDepth = getLeafDepth(sourceFolderId, 1, dto.targetFolderId());
+		int targetFolderCurrentDepth = folderSearchUtil.getFolderDepth(dto.targetFolderId());
+		if (sourceFolderLeafDepth + targetFolderCurrentDepth > MAX_FOLDER_DEPTH) {
+			throw ErrorCode.EXCEED_MAX_FOLDER_DEPTH.baseException();
+		}
+	}
+
+	/**
+	 * currentFolderId로부터 최대 깊이를 구하는 dfs
+	 * 이 과정 중, targetFolderId가 포함돼 있으면 예외 발생
+	 */
+	private int getLeafDepth(long currentFolderId, int currentDepth, long targetFolderId) {
+		List<Long> childFolderIds = folderMetadataRepository.findIdsByParentFolderIdForUpdate(currentFolderId);
+		if (isExistsPendingFile(currentFolderId)) {
+			throw ErrorCode.CANNOT_MOVE_FOLDER_WHEN_UPLOADING.baseException();
+		}
+		if (childFolderIds.isEmpty()) {
+			return currentDepth;
+		}
+		int result = 0;
+		for (Long childFolderId : childFolderIds) {
+			if (Objects.equals(childFolderId, targetFolderId)) {
+				throw ErrorCode.FOLDER_MOVE_NOT_AVAILABLE.baseException();
+			}
+			result = Math.max(result, getLeafDepth(childFolderId, currentDepth + 1, targetFolderId));
+		}
+		return result;
+	}
+
+	private boolean isExistsPendingFile(long currentFolderId) {
+		return fileMetadataRepository.existsByParentFolderIdAndUploadStatus(currentFolderId, UploadStatus.PENDING);
+	}
+
+	/**
+	 * 같은 폴더 내에 동일한 이름의 폴더가 있는지 확인
+	 */
+	private void validateDuplicatedFolderName(FolderMoveDto dto, FolderMetadata folderMetadata) {
+		if (folderMetadataRepository.existsByParentFolderIdAndUploadFolderName(dto.targetFolderId(),
+			folderMetadata.getUploadFolderName())) {
+			throw ErrorCode.FILE_NAME_DUPLICATE.baseException();
+		}
 	}
 
 	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int limit, FolderContentsSortField sortBy,
@@ -128,24 +204,7 @@ public class FolderService {
 			req.uploadFolderName())) {
 			throw ErrorCode.INVALID_FILE_NAME.baseException();
 		}
-		validateFolderDepth(req);
-	}
-
-	/**
-	 * 폴더를 무제한 생성하는 것을 방지하기 위해 깊이를 확인하는 메소드
-	 */
-	private void validateFolderDepth(CreateFolderReqDto req) {
-		int depth = 1;
-		Long currentFolderId = req.parentFolderId();
-		while (true) {
-			Optional<Long> parentFolderIdById = folderMetadataRepository.findParentFolderIdById(currentFolderId);
-			if (parentFolderIdById.isEmpty()) {
-				break;
-			}
-			currentFolderId = parentFolderIdById.get();
-			depth++;
-		}
-		if (depth >= CommonConstant.MAX_FOLDER_DEPTH) {
+		if (folderSearchUtil.getFolderDepth(req.parentFolderId()) >= MAX_FOLDER_DEPTH) {
 			throw ErrorCode.EXCEED_MAX_FOLDER_DEPTH.baseException();
 		}
 	}
@@ -156,6 +215,16 @@ public class FolderService {
 	private void validatePermission(FolderMetadata folderMetadata, long userId) {
 		if (!folderMetadata.getCreatorId().equals(userId)) {
 			throw ErrorCode.NO_PERMISSION.baseException();
+		}
+	}
+
+	/**
+	 * 폴더 이름에 금칙어가 있는지 확인
+	 */
+	private static void validateFolderName(CreateFolderReqDto req) {
+		if (Arrays.stream(CommonConstant.FILE_NAME_BLACK_LIST)
+			.anyMatch(character -> req.uploadFolderName().indexOf(character) != -1)) {
+			throw ErrorCode.INVALID_FILE_NAME.baseException();
 		}
 	}
 

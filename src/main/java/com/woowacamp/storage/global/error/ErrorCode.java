@@ -23,6 +23,8 @@ public enum ErrorCode {
 	FILE_METADATA_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 파일을 찾을 수 없습니다."),
 	EXCEED_MAX_FOLDER_DEPTH(HttpStatus.BAD_REQUEST, "최대 폴더 깊이를 초과했습니다."),
 	INVALID_FILE_SIZE(HttpStatus.BAD_REQUEST, "요청 파일 사이즈와 실제 파일 사이즈가 일치하지 않습니다."),
+	FOLDER_MOVE_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "올바르지 않은 폴더 이동입니다."),
+	CANNOT_MOVE_FOLDER_WHEN_UPLOADING(HttpStatus.BAD_REQUEST, "파일 업로드 중에 폴더 이동할 수 없습니다."),
 	FILE_NAME_DUPLICATE(HttpStatus.CONFLICT, "파일 또는 폴더 이름이 중복되었습니다."),
 	API_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 경로의 API를 찾을 수 없습니다."),
 	INVALID_DELETE_REQUEST(HttpStatus.BAD_REQUEST, "최상위 폴더는 제거할 수 없습니다."),

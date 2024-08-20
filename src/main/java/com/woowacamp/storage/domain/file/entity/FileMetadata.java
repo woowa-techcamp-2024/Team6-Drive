@@ -121,4 +121,8 @@ public class FileMetadata {
 	public void updateFinishUploadStatus() {
 		this.uploadStatus = UploadStatus.SUCCESS;
 	}
+
+	public void updateParentFolderId(Long parentFolderId) {
+		this.parentFolderId = parentFolderId;
+	}
 }

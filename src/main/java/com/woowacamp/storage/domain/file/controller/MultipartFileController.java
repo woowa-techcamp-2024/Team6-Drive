@@ -33,6 +33,7 @@ import com.woowacamp.storage.domain.file.dto.UploadContext;
 import com.woowacamp.storage.domain.file.dto.UploadState;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
+import com.woowacamp.storage.domain.file.service.FileService;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
 import com.woowacamp.storage.global.error.ErrorCode;
@@ -53,6 +54,7 @@ public class MultipartFileController {
 	private final S3FileService s3FileService;
 	private final FileWriterThreadPool fileWriterThreadPool;
 	private final FileMetadataRepository fileMetadataRepository;
+	private final FileService fileService;
 
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String BUCKET_NAME;
@@ -64,7 +66,6 @@ public class MultipartFileController {
 	private int S3_CHUNK_SIZE;
 
 	/**
-	 *
 	 * MultipartFile은 임시 저장을 해서 직접 request를 통해 multipart/form-data를 파싱했습니다.
 	 * 파싱을 하고 S3에 이미지를 업로드합니다.
 	 */
@@ -210,7 +211,6 @@ public class MultipartFileController {
 				partContext.getHeaders().put(headerName, headerValue);
 			}
 		}
-		System.out.println(partContext);
 	}
 
 	/**
@@ -326,7 +326,7 @@ public class MultipartFileController {
 	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId,
 		@Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
 
-		FileMetadata fileMetadata = s3FileService.getFileMetadataBy(fileId, userId);
+		FileMetadata fileMetadata = fileService.getFileMetadataBy(fileId, userId);
 		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, BUCKET_NAME, fileMetadata.getUuidFileName());
 		HttpHeaders headers = new HttpHeaders();
 		// HTTP 응답 헤더에 Content-Type 설정
@@ -344,8 +344,4 @@ public class MultipartFileController {
 			.body(new InputStreamResource(fileDataDto.fileInputStream()));
 	}
 
-	@GetMapping("/123")
-	public void asd() {
-		System.out.println(BUCKET_NAME);
-	}
 }
