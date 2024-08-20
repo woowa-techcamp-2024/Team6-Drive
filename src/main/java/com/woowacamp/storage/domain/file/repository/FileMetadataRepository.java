@@ -70,7 +70,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 	@Query(value = """
 			update FileMetadata f
 			set f.uploadStatus = :uploadStatus
-			where f.id in :fileId
+			where f.id = :fileId
 		""")
 	@Transactional
 	void setMetadataStatusFail(@Param("fileId") long fileId, @Param("uploadStatus") UploadStatus uploadStatus);
