@@ -4,12 +4,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -29,11 +32,14 @@ import com.woowacamp.storage.domain.file.dto.PartContext;
 import com.woowacamp.storage.domain.file.dto.UploadContext;
 import com.woowacamp.storage.domain.file.dto.UploadState;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
+import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.service.FileService;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
+import com.woowacamp.storage.global.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,24 +47,25 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/files")
 @Slf4j
+@Validated
 public class MultipartFileController {
 
 	private final AmazonS3 amazonS3;
+	private final S3FileService s3FileService;
 	private final FileWriterThreadPool fileWriterThreadPool;
+	private final FileMetadataRepository fileMetadataRepository;
+	private final FileService fileService;
 
 	@Value("${cloud.aws.credentials.bucketName}")
-	private String BUCKET_NAME = "group-6-drive";
+	private String BUCKET_NAME;
 	@Value("${file.reader.bufferSize}")
 	private int BUFFER_SIZE;
 	@Value("${file.reader.lineBufferMaxSize}")
 	private int LINE_BUFFER_MAX_SIZE;
 	@Value("${file.reader.chunkSize}")
 	private int S3_CHUNK_SIZE;
-	private final S3FileService s3FileService;
-	private final FileService fileService;
 
 	/**
-	 *
 	 * MultipartFile은 임시 저장을 해서 직접 request를 통해 multipart/form-data를 파싱했습니다.
 	 * 파싱을 하고 S3에 이미지를 업로드합니다.
 	 */
@@ -85,11 +92,22 @@ public class MultipartFileController {
 		PartContext partContext = new PartContext();
 		UploadState state = new UploadState();
 
-		int bytesRead;
-		while ((bytesRead = inputStream.read(buffer)) != -1) {
-			if (processBuffer(buffer, bytesRead, lineBuffer, contentBuffer, context, partContext, state)) {
-				break;
+		try {
+			int bytesRead;
+			while ((bytesRead = inputStream.read(buffer)) != -1) {
+				if (processBuffer(buffer, bytesRead, lineBuffer, contentBuffer, context, partContext, state)) {
+					break;
+				}
 			}
+		} catch (ClientAbortException e) {
+			log.error("[ClientAbortException] 입력 처리 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
+			if (context.getFileMetadata() == null) {
+				throw ErrorCode.INVALID_MULTIPART_FORM_DATA.baseException();
+			}
+
+			fileMetadataRepository.deleteById(context.getFileMetadata().metadataId());
+		} catch (AmazonS3Exception e) {
+			log.error("[AmazonS3Exception] 입력 예외로 완성되지 않은 S3 파일 제거 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
 		}
 	}
 
@@ -101,8 +119,8 @@ public class MultipartFileController {
 	 * @return - true인 경우 API 명세에 따라 추가 데이터는 읽지 않는다.
 	 */
 	private boolean processBuffer(byte[] buffer, int bytesRead, ByteArrayOutputStream lineBuffer,
-		ByteArrayOutputStream contentBuffer, UploadContext context,
-		PartContext partContext, UploadState state) throws Exception {
+		ByteArrayOutputStream contentBuffer, UploadContext context, PartContext partContext, UploadState state) throws
+		Exception {
 		for (int i = 0; i < bytesRead; i++) {
 			byte b = buffer[i];
 			lineBuffer.write(b);
@@ -114,11 +132,15 @@ public class MultipartFileController {
 
 			if (line.equals(context.getBoundary()) || line.equals(context.getFinalBoundary())) {
 				// boundary 한 줄을 읽은 경우
-				processEndOfPart(contentBuffer, context, partContext, state);
 				if (context.isFileRead()) {
-					s3FileService.finalizeMetadata(context.getFileMetadata(), state.getFileSize());
+					// final boundary
+					// 메타데이터 쓰기에 성공을 해야 S3에 파일 업로드를 요청한다
+					s3FileService.finalizeMetadata(context.getFileMetadata(),
+						state.getFileSize() + contentBuffer.size() - 2);
+					processEndOfPart(contentBuffer, context, partContext, state);
 					return true;
 				}
+				processEndOfPart(contentBuffer, context, partContext, state);
 				resetState(partContext, state);
 				// boundary가 끝난 뒤에 데이터가 남아 있으면 항상 헤더부터 시작
 				partContext.setInHeader(true);
@@ -131,8 +153,9 @@ public class MultipartFileController {
 					context.updateFileMetadata(fileMetadataDto);
 					context.updateIsFileRead();
 					partContext.setUploadFileName(fileMetadataDto.uuid());
-					state.setInitResponse(initializeFileUpload(partContext.getUploadFileName(),
-						partContext.getCurrentContentType()));
+					InitiateMultipartUploadResult initiateMultipartUploadResult = initializeFileUpload(
+						partContext.getUploadFileName(), partContext.getCurrentContentType());
+					state.setInitResponse(initiateMultipartUploadResult);
 					state.initPartEtag(partContext.getUploadFileName());
 					state.setFileMetadataDto(fileMetadataDto);
 				}
@@ -197,8 +220,9 @@ public class MultipartFileController {
 		fileWriterThreadPool.initializePartCount(fileName);
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentType(contentType);
-		InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(BUCKET_NAME, fileName)
-			.withObjectMetadata(metadata);
+		InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(BUCKET_NAME,
+			fileName).withObjectMetadata(metadata);
+
 		return amazonS3.initiateMultipartUpload(initRequest);
 	}
 
@@ -298,13 +322,19 @@ public class MultipartFileController {
 	}
 
 	@GetMapping("/download/{fileId}")
-	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId, @RequestParam("userId") Long userId) {
+	@Validated
+	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId,
+		@Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
 
 		FileMetadata fileMetadata = fileService.getFileMetadataBy(fileId, userId);
 		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, BUCKET_NAME, fileMetadata.getUuidFileName());
 		HttpHeaders headers = new HttpHeaders();
 		// HTTP 응답 헤더에 Content-Type 설정
-		headers.add(HttpHeaders.CONTENT_TYPE, fileMetadata.getFileType());
+		String fileType = fileMetadata.getFileType();
+		if (fileType == null) {
+			fileType = "application/octet-stream";
+		}
+		headers.add(HttpHeaders.CONTENT_TYPE, fileType);
 		headers.add(HttpHeaders.CONTENT_DISPOSITION,
 			"attachment; filename=" + fileDataDto.fileMetadataDto().uploadFileName());
 
