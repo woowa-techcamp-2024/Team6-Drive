@@ -66,6 +66,7 @@ public class SharedLinkService {
 			.expiredAt(expiredTime)
 			.isFile(requestDto.isFile())
 			.targetId(requestDto.targetId())
+			.permissionType(requestDto.getPermissionType())
 			.build();
 
 		try {

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -63,9 +65,15 @@ public class SharedLink {
 	@NotNull
 	private Long targetId;
 
+	@Column(name = "permission_type", columnDefinition = "VARCHAR(10) NOT NULL")
+	@NotNull
+	@Enumerated(EnumType.STRING)
+	private PermissionType permissionType;
+
 	@Builder
+
 	public SharedLink(Long id, LocalDateTime createdAt, String sharedLinkUrl, Long sharedUserId, String sharedToken,
-		LocalDateTime expiredAt, Boolean isFile, Long targetId) {
+		LocalDateTime expiredAt, Boolean isFile, Long targetId, PermissionType permissionType) {
 		this.id = id;
 		this.createdAt = createdAt;
 		this.sharedLinkUrl = sharedLinkUrl;
@@ -74,5 +82,6 @@ public class SharedLink {
 		this.expiredAt = expiredAt;
 		this.isFile = isFile;
 		this.targetId = targetId;
+		this.permissionType = permissionType;
 	}
 }
