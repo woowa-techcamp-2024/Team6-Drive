@@ -214,7 +214,7 @@ public class FolderService {
 	 */
 	private void validatePermission(FolderMetadata folderMetadata, long userId) {
 		if (!folderMetadata.getCreatorId().equals(userId)) {
-			throw ErrorCode.NO_PERMISSION.baseException();
+			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
 	}
 

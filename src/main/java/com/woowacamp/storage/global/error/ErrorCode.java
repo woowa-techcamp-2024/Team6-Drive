@@ -16,7 +16,6 @@ public enum ErrorCode {
 	WRONG_FOLDER_CONTENTS_SORT_FIELD(HttpStatus.BAD_REQUEST, "잘못된 폴더 컨텐츠 정렬 기준입니다."),
 	WRONG_PAGE_SIZE(HttpStatus.BAD_REQUEST, "잘못된 페이지 사이즈입니다."),
 	INVALID_FILE_NAME(HttpStatus.BAD_REQUEST, "파일 이름이 부적절합니다."),
-	NO_PERMISSION(HttpStatus.FORBIDDEN, "권한이 부족합니다."),
 	EXCEED_MAX_FILE_SIZE(HttpStatus.BAD_REQUEST, "요청 가능한 파일 크기를 초과했습니다."),
 	EXCEED_MAX_STORAGE_SIZE(HttpStatus.BAD_REQUEST, "최대 저장 공간 크기를 초과했습니다."),
 	INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "올바르지 않은 입력입니다."),
@@ -33,6 +32,8 @@ public enum ErrorCode {
 	UNABLE_TO_CREATE_FILE(HttpStatus.BAD_REQUEST, "해당 위치에 파일을 생성할 수 없습니다."),
 	CANNOT_DELETE_FILE_WHEN_UPLOADING(HttpStatus.BAD_REQUEST, "파일 업로드 중에 폴더 삭제를 할 수 없습니다."),
 	INVALID_MULTIPART_FORM_DATA(HttpStatus.BAD_REQUEST, "올바른 데이터 형식으로 요청을 보내주세요."),
+	DUPLICATED_SHARED_LINK(HttpStatus.CONFLICT, "공유 링크 생성에 실패했습니다. 잠시 후에 다시 시도해 주세요."),
+	WRONG_PERMISSION_TYPE(HttpStatus.BAD_REQUEST, "잘못된 권한 타입입니다."),
 	// 500,
 	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
 	FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다.");

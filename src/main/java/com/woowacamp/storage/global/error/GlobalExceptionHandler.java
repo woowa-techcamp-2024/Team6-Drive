@@ -9,7 +9,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.woowacamp.storage.global.response.ErrorResponse;
@@ -67,7 +66,7 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(errorResponse.httpStatus()).body(errorResponse);
 	}
 
-	@ExceptionHandler(HandlerMethodValidationException.class)
+	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(MethodArgumentNotValidException e) {
 		CustomException customException = ErrorCode.INVALID_ARGUMENT_ERROR.baseException();
 		ErrorResponse errorResponse = ErrorResponse.of(customException.getHttpStatus(), customException.getMessage(),

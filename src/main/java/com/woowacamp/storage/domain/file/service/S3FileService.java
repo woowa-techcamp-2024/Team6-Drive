@@ -154,7 +154,7 @@ public class S3FileService {
 		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(parentFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 		if (!Objects.equals(folderMetadata.getCreatorId(), userId)) {
-			throw ErrorCode.NO_PERMISSION.baseException();
+			throw ACCESS_DENIED.baseException();
 		}
 	}
 
