@@ -1,6 +1,5 @@
 package com.woowacamp.storage.domain.shredlink.service;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +14,7 @@ import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.shredlink.dto.request.MakeSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.response.SharedLinkResponseDto;
 import com.woowacamp.storage.domain.shredlink.entity.SharedLink;
+import com.woowacamp.storage.domain.shredlink.entity.SharedLinkFactory;
 import com.woowacamp.storage.domain.shredlink.repository.SharedLinkRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
 import com.woowacamp.storage.global.error.ErrorCode;
@@ -53,21 +53,9 @@ public class SharedLinkService {
 			}
 		}
 
-		LocalDateTime createTime = LocalDateTime.now();
-		LocalDateTime expiredTime = createTime.plusHours(CommonConstant.SHARED_LINK_VALID_TIME);
-
 		String sharedUrl = createSharedLink();
 		String sharedToken = createToken();
-		SharedLink sharedLink = SharedLink.builder()
-			.createdAt(createTime)
-			.sharedLinkUrl(sharedUrl)
-			.sharedUserId(requestDto.userId())
-			.sharedToken(sharedToken)
-			.expiredAt(expiredTime)
-			.isFile(requestDto.isFile())
-			.targetId(requestDto.targetId())
-			.permissionType(requestDto.getPermissionType())
-			.build();
+		SharedLink sharedLink = SharedLinkFactory.createSharedLink(requestDto, sharedUrl, sharedToken);
 
 		try {
 			sharedLinkRepository.saveAndFlush(sharedLink);
