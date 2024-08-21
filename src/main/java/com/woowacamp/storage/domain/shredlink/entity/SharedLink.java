@@ -18,13 +18,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-	name = "shared_link",
-	uniqueConstraints = {
-		@UniqueConstraint(columnNames = {"shared_link_url"}),
-		@UniqueConstraint(columnNames = {"shared_token"})
-	}
-)
+@Table(name = "shared_link", uniqueConstraints = {@UniqueConstraint(columnNames = {"shared_link_url"}),
+	@UniqueConstraint(columnNames = {"shared_token"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class SharedLink {
@@ -71,7 +66,6 @@ public class SharedLink {
 	private PermissionType permissionType;
 
 	@Builder
-
 	public SharedLink(Long id, LocalDateTime createdAt, String sharedLinkUrl, Long sharedUserId, String sharedToken,
 		LocalDateTime expiredAt, Boolean isFile, Long targetId, PermissionType permissionType) {
 		this.id = id;
