@@ -101,7 +101,7 @@ public class FileService {
 	}
 
 	@Transactional
-	public void cancelShare(Long userId, Long fileId) {
+	public void cancelShare(Long fileId) {
 		//todo 권한 체크 필요. 파일 소유주만 취소 가능?
 		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
