@@ -43,6 +43,13 @@ public class SharedLinkService {
 	public SharedLinkResponseDto createShareLink(MakeSharedLinkRequestDto requestDto) {
 		validateRequest(requestDto);
 
+		// 기존에 발급된 링크가 있다면 반환
+		Optional<SharedLink> existingSharedLink = getExistingSharedLink(requestDto.isFile(), requestDto.targetId(),
+			requestDto.getPermissionType());
+		if (existingSharedLink.isPresent()) {
+			return new SharedLinkResponseDto(createSharedLinkUrl(existingSharedLink.get().getSharedId()));
+		}
+
 		SharedLink sharedLink = createSharedLink(requestDto);
 		try {
 			sharedLinkRepository.saveAndFlush(sharedLink);
@@ -72,20 +79,20 @@ public class SharedLinkService {
 		}
 	}
 
-		String sharedToken = createToken();
-		SharedLink sharedLink = SharedLinkFactory.createSharedLink(requestDto, sharedUrl, sharedToken);
-
+	private Optional<SharedLink> getExistingSharedLink(boolean isFile, long targetId, PermissionType permissionType) {
+		List<SharedLink> existingLinks = sharedLinkRepository.findByIsFileAndTargetId(isFile, targetId);
+		for (SharedLink link : existingLinks) {
 			if (!link.isExpired() && Objects.equals(permissionType, link.getPermissionType())) {
-			sharedLinkRepository.saveAndFlush(sharedLink);
-		} catch (DataIntegrityViolationException e) {
-			throw ErrorCode.DUPLICATED_SHARED_LINK.baseException();
+				return Optional.of(link);
+			}
 		}
+		return Optional.empty();
+	}
 
-		return new SharedLinkResponseDto(sharedUrl);
 	private SharedLink createSharedLink(MakeSharedLinkRequestDto requestDto) {
-
-	private boolean isOwner(long ownerId, long userId) {
-		return ownerId == userId;
+		String sharedId = UUID.randomUUID().toString();
+		String redirectUrl = createRedirectUrl(requestDto.isFile(), requestDto.targetId());
+		return SharedLinkFactory.createSharedLink(requestDto, sharedId, redirectUrl);
 	}
 
 	private String createRedirectUrl(boolean isFile, long targetId) {
