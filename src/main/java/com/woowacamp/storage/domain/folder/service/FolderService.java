@@ -294,8 +294,8 @@ public class FolderService {
 			folderIdListForDelete.add(currentFolderId);
 
 			// 하위의 파일 조회
-			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderId(
-				currentFolderId);
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderIdAndUploadStatusNot(
+				currentFolderId, UploadStatus.FAIL);
 
 			// 하위 파일의 실제 데이터 삭제 및 삭제해야 할 파일 id 값 저장
 			childFileMetadata.forEach(fileMetadata -> {

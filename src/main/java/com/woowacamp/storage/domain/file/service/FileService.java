@@ -60,8 +60,8 @@ public class FileService {
 		if (fileMetadata.getUploadStatus() != UploadStatus.SUCCESS) {
 			throw ErrorCode.FILE_NOT_FOUND.baseException();
 		}
-		if (fileMetadataRepository.existsByParentFolderIdAndUploadFileNameAndFileType(dto.targetFolderId(),
-			fileMetadata.getUploadFileName(), fileMetadata.getFileType())) {
+		if (fileMetadataRepository.existsByParentFolderIdAndUploadFileNameAndUploadStatusNot(dto.targetFolderId(),
+			fileMetadata.getUploadFileName(), UploadStatus.FAIL)) {
 			throw ErrorCode.FILE_NAME_DUPLICATE.baseException();
 		}
 	}
@@ -79,7 +79,8 @@ public class FileService {
 	// private String BUCKET_NAME
 	@Transactional
 	public void deleteFile(Long fileId, Long userId) {
-		FileMetadata fileMetadata = fileMetadataRepository.findByIdAndOwnerId(fileId, userId)
+		FileMetadata fileMetadata = fileMetadataRepository.findByIdAndOwnerIdAndUploadStatusNot(fileId, userId,
+				UploadStatus.FAIL)
 			.orElseThrow(ACCESS_DENIED::baseException);
 
 		fileMetadataRepository.delete(fileMetadata);
