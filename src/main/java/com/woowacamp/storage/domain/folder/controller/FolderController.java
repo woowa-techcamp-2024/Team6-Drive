@@ -18,7 +18,9 @@ import com.woowacamp.storage.domain.folder.dto.GetFolderContentsRequestParams;
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
 import com.woowacamp.storage.domain.folder.dto.request.FolderMoveDto;
 import com.woowacamp.storage.domain.folder.service.FolderService;
+import com.woowacamp.storage.global.util.UrlUtil;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -31,8 +33,9 @@ public class FolderController {
 
 	@ResponseStatus(HttpStatus.CREATED)
 	@PostMapping
-	public void createFolder(@Valid @RequestBody CreateFolderReqDto req) {
-		folderService.createFolder(req);
+	public void createFolder(@Valid @RequestBody CreateFolderReqDto req, HttpServletResponse response) {
+		Long folder = folderService.createFolder(req);
+		response.setHeader("Location", UrlUtil.getAbsoluteUrl("/api/v1/folders/" + folder));
 	}
 
 	@GetMapping("/{folderId}")

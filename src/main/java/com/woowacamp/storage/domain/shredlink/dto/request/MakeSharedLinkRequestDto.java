@@ -1,6 +1,6 @@
 package com.woowacamp.storage.domain.shredlink.dto.request;
 
-import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
+import com.woowacamp.storage.global.constant.PermissionType;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
