@@ -3,6 +3,7 @@ package com.woowacamp.storage.domain.folder.entity;
 import java.time.LocalDateTime;
 
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
+import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.global.constant.CommonConstant;
 
@@ -14,6 +15,7 @@ public class FolderMetadataFactory {
 			.uploadFolderName(folderName)
 			.isShared(false)
 			.sharingExpiredAt(CommonConstant.SHARED_EXPIRED_AT)
+			.permissionType(PermissionType.NONE)
 			.build();
 	}
 
@@ -28,6 +30,7 @@ public class FolderMetadataFactory {
 			.uploadFolderName(req.uploadFolderName())
 			.isShared(false)
 			.sharingExpiredAt(CommonConstant.SHARED_EXPIRED_AT)
+			.permissionType(PermissionType.NONE)
 			.build();
 	}
 }

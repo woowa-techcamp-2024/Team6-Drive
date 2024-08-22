@@ -2,6 +2,7 @@ package com.woowacamp.storage.domain.file.entity;
 
 import java.time.LocalDateTime;
 
+import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 
 import jakarta.persistence.Column;
@@ -85,10 +86,15 @@ public class FileMetadata {
 	@NotNull
 	private LocalDateTime sharingExpiredAt;
 
+	@Column(name = "permission_type", columnDefinition = "VARCHAR(10) NOT NULL")
+	@NotNull
+	@Enumerated(EnumType.STRING)
+	private PermissionType permissionType;
+
 	@Builder
 	public FileMetadata(Long id, Long rootId, Long creatorId, Long ownerId, String fileType, LocalDateTime createdAt,
 		LocalDateTime updatedAt, Long parentFolderId, Long fileSize, String uploadFileName, String uuidFileName,
-		UploadStatus uploadStatus, boolean isShared, LocalDateTime sharingExpiredAt) {
+		UploadStatus uploadStatus, boolean isShared, LocalDateTime sharingExpiredAt, PermissionType permissionType) {
 		this.id = id;
 		this.rootId = rootId;
 		this.creatorId = creatorId;
@@ -103,6 +109,7 @@ public class FileMetadata {
 		this.uploadStatus = uploadStatus;
 		this.isShared = isShared;
 		this.sharingExpiredAt = sharingExpiredAt;
+		this.permissionType = permissionType;
 	}
 
 	public void updateCreatedAt(LocalDateTime createdAt) {
