@@ -1,4 +1,4 @@
-package com.woowacamp.storage.domain.shredlink.entity;
+package com.woowacamp.storage.global.constant;
 
 import java.util.Arrays;
 
