@@ -34,4 +34,12 @@ public class SharedLinkController {
 	public SharedLinkResponseDto createSharedLink(@Valid @RequestBody MakeSharedLinkRequestDto requestDto) {
 		return sharedLinkService.createShareLink(requestDto);
 	}
+
+	@GetMapping
+	@ResponseStatus(HttpStatus.FOUND)
+	public void getTokenFromShareLink(@NotNull @Positive @RequestParam Long userId,
+		@NotBlank @RequestParam String sharedId, HttpServletResponse response) throws
+		IOException {
+		response.sendRedirect(sharedLinkService.getRedirectUrl(sharedId) + "?userId =" + userId);
+	}
 }
