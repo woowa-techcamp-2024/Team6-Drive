@@ -8,7 +8,7 @@ import com.woowacamp.storage.global.constant.UploadStatus;
 public class FileMetadataFactory {
 
 	public static FileMetadata buildInitialMetadata(User user, long parentFolderId, long fileSize, String uuidFileName,
-		String fileName, String fileType) {
+		String fileName, String fileType, String thumbnailUUID) {
 		LocalDateTime now = LocalDateTime.now();
 		return FileMetadata.builder()
 			.rootId(user.getRootFolderId())
@@ -22,6 +22,7 @@ public class FileMetadataFactory {
 			.fileType(fileType)
 			.createdAt(now)
 			.updatedAt(now)
+			.thumbnailUUID(thumbnailUUID)
 			.build();
 	}
 }

@@ -60,12 +60,13 @@ public class S3FileService {
 		validateRequest(formMetadataDto, partContext, user, fileName, fileType);
 
 		String uuidFileName = getUuidFileName();
+		String uuidThumbnail = "thumb_" + uuidFileName;
 
 		// 1차 메타데이터 생성
 		// TODO: 공유 기능이 생길 때, creatorId, ownerId 따로
 		FileMetadata fileMetadata = fileMetadataRepository.save(
 			FileMetadataFactory.buildInitialMetadata(user, formMetadataDto.getParentFolderId(),
-				formMetadataDto.getFileSize(), uuidFileName, fileName, fileType));
+				formMetadataDto.getFileSize(), uuidFileName, fileName, fileType, uuidThumbnail));
 
 		return FileMetadataDto.of(fileMetadata);
 	}
@@ -181,8 +182,8 @@ public class S3FileService {
 			throw ErrorCode.INVALID_FILE_NAME.baseException();
 		}
 		// 이미 해당 폴더에 같은 이름의 파일이 존재하는지 확인
-		if (fileMetadataRepository.existsByParentFolderIdAndUploadFileNameAndFileType(parentFolderId, fileName,
-			fileType)) {
+		if (fileMetadataRepository.existsByParentFolderIdAndUploadFileNameAndUploadStatusNot(parentFolderId, fileName,
+			UploadStatus.FAIL)) {
 			throw ErrorCode.FILE_NAME_DUPLICATE.baseException();
 		}
 	}

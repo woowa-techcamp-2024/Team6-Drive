@@ -77,6 +77,10 @@ public class FileMetadata {
 	@NotNull
 	private UploadStatus uploadStatus;
 
+	@Column(name = "thumbnail_file_name", columnDefinition = "VARCHAR(100) NOT NULL unique")
+	@NotNull
+	private String thumbnailUUID;
+
 	@Builder
 	public FileMetadata(
 		Long id,
@@ -90,7 +94,8 @@ public class FileMetadata {
 		Long fileSize,
 		String uploadFileName,
 		String uuidFileName,
-		UploadStatus uploadStatus
+		UploadStatus uploadStatus,
+		String thumbnailUUID
 	) {
 		this.id = id;
 		this.rootId = rootId;
@@ -104,6 +109,7 @@ public class FileMetadata {
 		this.uploadFileName = uploadFileName;
 		this.uuidFileName = uuidFileName;
 		this.uploadStatus = uploadStatus;
+		this.thumbnailUUID = thumbnailUUID;
 	}
 
 	public void updateCreatedAt(LocalDateTime createdAt) {
