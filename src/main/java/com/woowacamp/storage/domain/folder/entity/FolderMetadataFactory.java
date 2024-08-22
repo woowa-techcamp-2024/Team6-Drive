@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
 import com.woowacamp.storage.domain.user.entity.User;
+import com.woowacamp.storage.global.constant.CommonConstant;
 
 public class FolderMetadataFactory {
 	public static FolderMetadata createFolderMetadataBySignup(LocalDateTime localDateTime, String folderName) {
@@ -11,6 +12,8 @@ public class FolderMetadataFactory {
 			.createdAt(localDateTime)
 			.updatedAt(localDateTime)
 			.uploadFolderName(folderName)
+			.isShared(false)
+			.sharingExpiredAt(CommonConstant.SHARED_EXPIRED_AT)
 			.build();
 	}
 
@@ -23,6 +26,8 @@ public class FolderMetadataFactory {
 			.updatedAt(now)
 			.parentFolderId(req.parentFolderId())
 			.uploadFolderName(req.uploadFolderName())
+			.isShared(false)
+			.sharingExpiredAt(CommonConstant.SHARED_EXPIRED_AT)
 			.build();
 	}
 }
