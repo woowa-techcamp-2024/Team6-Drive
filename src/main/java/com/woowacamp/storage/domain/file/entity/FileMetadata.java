@@ -77,21 +77,18 @@ public class FileMetadata {
 	@NotNull
 	private UploadStatus uploadStatus;
 
+	@Column(name = "is_shared", columnDefinition = "TINYINT(1) NOT NULL")
+	@NotNull
+	private boolean isShared;
+
+	@Column(name = "sharing_expired_at", columnDefinition = "TIMESTAMP NOT NULL")
+	@NotNull
+	private LocalDateTime sharingExpiredAt;
+
 	@Builder
-	public FileMetadata(
-		Long id,
-		Long rootId,
-		Long creatorId,
-		Long ownerId,
-		String fileType,
-		LocalDateTime createdAt,
-		LocalDateTime updatedAt,
-		Long parentFolderId,
-		Long fileSize,
-		String uploadFileName,
-		String uuidFileName,
-		UploadStatus uploadStatus
-	) {
+	public FileMetadata(Long id, Long rootId, Long creatorId, Long ownerId, String fileType, LocalDateTime createdAt,
+		LocalDateTime updatedAt, Long parentFolderId, Long fileSize, String uploadFileName, String uuidFileName,
+		UploadStatus uploadStatus, boolean isShared, LocalDateTime sharingExpiredAt) {
 		this.id = id;
 		this.rootId = rootId;
 		this.creatorId = creatorId;
@@ -104,6 +101,8 @@ public class FileMetadata {
 		this.uploadFileName = uploadFileName;
 		this.uuidFileName = uuidFileName;
 		this.uploadStatus = uploadStatus;
+		this.isShared = isShared;
+		this.sharingExpiredAt = sharingExpiredAt;
 	}
 
 	public void updateCreatedAt(LocalDateTime createdAt) {

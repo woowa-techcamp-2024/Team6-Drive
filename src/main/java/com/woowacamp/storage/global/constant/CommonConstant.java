@@ -1,5 +1,7 @@
 package com.woowacamp.storage.global.constant;
 
+import java.time.LocalDateTime;
+
 public class CommonConstant {
 	public static final Character[] FILE_NAME_BLACK_LIST = {'\\', '/', ':', '*', '?', '"', '<', '>', '|'};
 	public static final int MAX_FOLDER_DEPTH = 50;
@@ -10,4 +12,5 @@ public class CommonConstant {
 	public static final int ORPHAN_PARENT_ID = -1;
 	public static final int SHARED_LINK_VALID_TIME = 3 * 60 * 60;
 	public static final String SHARED_URI = "/api/v1/share?sharedId=";
+	public static final LocalDateTime SHARED_EXPIRED_AT = LocalDateTime.MIN;
 }

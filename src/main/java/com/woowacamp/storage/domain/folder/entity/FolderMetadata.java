@@ -56,9 +56,18 @@ public class FolderMetadata {
 	@Column(name = "folder_size", columnDefinition = "BIGINT NOT NULL DEFAULT 0")
 	private long size;
 
+	@Column(name = "is_shared", columnDefinition = "TINYINT(1) NOT NULL")
+	@NotNull
+	private boolean isShared;
+
+	@Column(name = "sharing_expired_at", columnDefinition = "TIMESTAMP NOT NULL")
+	@NotNull
+	private LocalDateTime sharingExpiredAt;
+
 	@Builder
-	private FolderMetadata(Long id, Long rootId, Long ownerId, Long creatorId, LocalDateTime createdAt,
-		LocalDateTime updatedAt, Long parentFolderId, String uploadFolderName) {
+	public FolderMetadata(Long id, Long rootId, Long ownerId, Long creatorId, LocalDateTime createdAt,
+		LocalDateTime updatedAt, Long parentFolderId, String uploadFolderName, long size, boolean isShared,
+		LocalDateTime sharingExpiredAt) {
 		this.id = id;
 		this.rootId = rootId;
 		this.ownerId = ownerId;
@@ -67,6 +76,9 @@ public class FolderMetadata {
 		this.updatedAt = updatedAt;
 		this.parentFolderId = parentFolderId;
 		this.uploadFolderName = uploadFolderName;
+		this.size = size;
+		this.isShared = isShared;
+		this.sharingExpiredAt = sharingExpiredAt;
 	}
 
 	public void initOwnerId(Long ownerId) {
