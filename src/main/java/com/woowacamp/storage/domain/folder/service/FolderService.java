@@ -34,6 +34,7 @@ import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
@@ -179,7 +180,7 @@ public class FolderService {
 	 * 이미 제거되어 Null을 리턴한 경우 폴더가 생성되지 않습니다.
 	 */
 	@Transactional
-	public void createFolder(CreateFolderReqDto req) {
+	public Long createFolder(CreateFolderReqDto req) {
 		User user = userRepository.findById(req.userId()).orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
 
 		// TODO: 이후 공유 기능이 생길 때, request에 ownerId, creatorId 따로 받아야함
@@ -192,7 +193,8 @@ public class FolderService {
 		validateFolderName(req);
 		validateFolder(req);
 		LocalDateTime now = LocalDateTime.now();
-		folderMetadataRepository.save(createFolderMetadata(user, now, req));
+		FolderMetadata newFolder = folderMetadataRepository.save(createFolderMetadata(user, now, req));
+		return newFolder.getId();
 	}
 
 	/**
@@ -354,4 +356,18 @@ public class FolderService {
 		}
 	}
 
+	@Transactional
+	public long updateSubFolderShareStatus(long folderId, PermissionType permissionType,
+		LocalDateTime sharingExpireAt) {
+		FolderMetadata folder = folderMetadataRepository.findById(folderId)
+			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+
+		List<Long> subFolderIds = folderMetadataRepository.getSubFoldersId(folder.getId());
+		long foldersUpdated = folderMetadataRepository.updateShareStatus(subFolderIds, true, permissionType,
+			sharingExpireAt);
+
+		long filesUpdated = fileMetadataRepository.updateSubFilesShareStatus(subFolderIds, true, permissionType,
+			sharingExpireAt);
+		return foldersUpdated + filesUpdated;
+	}
 }

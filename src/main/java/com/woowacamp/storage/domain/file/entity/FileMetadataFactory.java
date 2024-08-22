@@ -2,9 +2,9 @@ package com.woowacamp.storage.domain.file.entity;
 
 import java.time.LocalDateTime;
 
-import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 
 public class FileMetadataFactory {
@@ -23,7 +23,7 @@ public class FileMetadataFactory {
 			.uploadFileName(fileName)
 			.fileType(fileType)
 			.isShared(false)
-			.sharingExpiredAt(CommonConstant.SHARED_EXPIRED_AT)
+			.sharingExpiredAt(CommonConstant.UNAVAILABLE_TIME)
 			.createdAt(now)
 			.updatedAt(now)
 			.permissionType(PermissionType.NONE)

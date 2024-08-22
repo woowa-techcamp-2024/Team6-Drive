@@ -2,7 +2,7 @@ package com.woowacamp.storage.domain.folder.entity;
 
 import java.time.LocalDateTime;
 
-import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
+import com.woowacamp.storage.global.constant.PermissionType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

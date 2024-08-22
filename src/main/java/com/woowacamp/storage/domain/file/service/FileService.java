@@ -2,6 +2,7 @@ package com.woowacamp.storage.domain.file.service;
 
 import static com.woowacamp.storage.global.error.ErrorCode.*;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 
@@ -18,6 +19,7 @@ import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
@@ -89,5 +91,12 @@ public class FileService {
 		} catch (AmazonS3Exception e) {
 			throw ErrorCode.FILE_DELETE_FAILED.baseException();
 		}
+	}
+
+	@Transactional
+	public void updateShareStatus(Long fileId, PermissionType permissionType, LocalDateTime sharingExpireAt) {
+		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
+			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+		fileMetadata.updateShareStatus(permissionType, sharingExpireAt);
 	}
 }
