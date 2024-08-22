@@ -11,6 +11,8 @@ public class CommonConstant {
 	public static final int THUMBNAIL_WRITER_MAXIMUM_POOL_SIZE = 100;
 	public static final int THUMBNAIL_WRITER_KEEP_ALIVE_TIME = 0;
 	public static final int ORPHAN_PARENT_ID = -1;
+	public static final long SHARED_LINK_VALID_TIME = 3;
+	public static final String SHARED_URI = "/api/v1/share?shareId=";
 	// 1MB
 	public static final int THUMBNAIL_SIZE = 1024 * 1024;
 }
