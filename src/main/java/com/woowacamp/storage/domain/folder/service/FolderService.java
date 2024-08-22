@@ -370,4 +370,22 @@ public class FolderService {
 			sharingExpireAt);
 		return foldersUpdated + filesUpdated;
 	}
+
+	/**
+	 * 폴더 공유 취소 메소드입니다.
+	 * 폴더, 하위 폴더 및 파일의 공유를 취소합니다.
+	 */
+	@Transactional
+	public long cancelShare(long folderId) {
+		FolderMetadata folder = folderMetadataRepository.findById(folderId)
+			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+
+		List<Long> subFolderIds = folderMetadataRepository.getSubFoldersId(folder.getId());
+		long foldersUpdated = folderMetadataRepository.updateShareStatus(subFolderIds, false, PermissionType.NONE,
+			UNAVAILABLE_TIME);
+
+		long filesUpdated = fileMetadataRepository.updateSubFilesShareStatus(subFolderIds, false, PermissionType.NONE,
+			UNAVAILABLE_TIME);
+		return foldersUpdated + filesUpdated;
+	}
 }

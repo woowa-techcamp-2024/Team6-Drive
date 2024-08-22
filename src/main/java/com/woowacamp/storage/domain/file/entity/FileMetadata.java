@@ -141,4 +141,10 @@ public class FileMetadata {
 		this.permissionType = permissionType;
 		this.sharingExpiredAt = sharingExpiredAt;
 	}
+
+	public void cancelShare() {
+		this.isShared = false;
+		this.permissionType = PermissionType.NONE;
+		this.sharingExpiredAt = CommonConstant.UNAVAILABLE_TIME;
+	}
 }
