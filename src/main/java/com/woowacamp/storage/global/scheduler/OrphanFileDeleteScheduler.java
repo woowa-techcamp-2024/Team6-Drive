@@ -53,6 +53,9 @@ public class OrphanFileDeleteScheduler {
 					fileMetadata.getUuidFileName());
 				if (Objects.nonNull(objectMetadata)) {
 					amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUploadFileName());
+					if (fileMetadata.getThumbnailUUID() != null) {
+						amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getThumbnailUUID());
+					}
 					fileMetadataRepository.deleteById(fileMetadata.getId());
 				}
 			} catch (AmazonS3Exception e) {
