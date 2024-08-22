@@ -24,6 +24,6 @@ public class SharedLinkController {
 	@ResponseStatus(HttpStatus.CREATED)
 	@PostMapping
 	public SharedLinkResponseDto createSharedLink(@Valid @RequestBody MakeSharedLinkRequestDto requestDto) {
-		return sharedLinkService.createSharedLink(requestDto);
+		return sharedLinkService.createShareLink(requestDto);
 	}
 }

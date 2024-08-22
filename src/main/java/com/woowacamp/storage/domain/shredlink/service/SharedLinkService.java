@@ -24,8 +24,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class SharedLinkService {
-	@Value("${share.server-domain}")
-	private String SERVER_DOMAIN;
 
 	private final SharedLinkRepository sharedLinkRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
@@ -33,10 +31,10 @@ public class SharedLinkService {
 
 	/**
 	 * 공유 링크 생성 메소드
-	 * 공유 링크와 토큰 값은 UUID를 사용했습니다.
+	 *공유 대상 폴더/파일(폴더라면 하위 폴더 및 파일까지)의   공유 상태를 업데이트 하고 공유 링크를 반환합니다.
 	 */
 	@Transactional
-	public SharedLinkResponseDto createSharedLink(MakeSharedLinkRequestDto requestDto) {
+	public SharedLinkResponseDto createShareLink(MakeSharedLinkRequestDto requestDto) {
 		if (requestDto.isFile()) { // file인 경우
 			FileMetadata fileMetadata = fileMetadataJpaRepository.findById(requestDto.targetId())
 				.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
