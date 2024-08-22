@@ -2,8 +2,12 @@ package com.woowacamp.storage.domain.folder.entity;
 
 import java.time.LocalDateTime;
 
+import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -64,10 +68,15 @@ public class FolderMetadata {
 	@NotNull
 	private LocalDateTime sharingExpiredAt;
 
+	@Column(name = "permission_type", columnDefinition = "VARCHAR(10) NOT NULL")
+	@NotNull
+	@Enumerated(EnumType.STRING)
+	private PermissionType permissionType;
+
 	@Builder
 	public FolderMetadata(Long id, Long rootId, Long ownerId, Long creatorId, LocalDateTime createdAt,
 		LocalDateTime updatedAt, Long parentFolderId, String uploadFolderName, long size, boolean isShared,
-		LocalDateTime sharingExpiredAt) {
+		LocalDateTime sharingExpiredAt, PermissionType permissionType) {
 		this.id = id;
 		this.rootId = rootId;
 		this.ownerId = ownerId;
@@ -79,6 +88,7 @@ public class FolderMetadata {
 		this.size = size;
 		this.isShared = isShared;
 		this.sharingExpiredAt = sharingExpiredAt;
+		this.permissionType = permissionType;
 	}
 
 	public void initOwnerId(Long ownerId) {

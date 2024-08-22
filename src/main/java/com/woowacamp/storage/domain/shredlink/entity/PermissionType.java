@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum PermissionType {
-	WRITE("Write"), READ("Read");
+	WRITE("Write"), READ("Read"), NONE("None");
 	private final String value;
 
 	public static PermissionType fromValue(String value) {
