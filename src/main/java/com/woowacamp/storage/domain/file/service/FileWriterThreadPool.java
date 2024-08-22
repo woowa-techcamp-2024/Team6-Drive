@@ -113,7 +113,7 @@ public class FileWriterThreadPool {
 			amazonS3.completeMultipartUpload(completeRequest);
 		} catch (AmazonClientException e) {
 			log.error("[Error Occurred] completeFileUpload가 정상적으로 동작하지 않습니다.");
-			fileMetadataRepository.deleteByUuidFileName(currentFileName);
+			fileMetadataRepository.updateUploadStatusByUuid(currentFileName);
 		}
 	}
 
