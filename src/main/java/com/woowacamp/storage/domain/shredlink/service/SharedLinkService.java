@@ -14,10 +14,12 @@ import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataJpaRepository;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
+import com.woowacamp.storage.domain.shredlink.dto.request.CancelSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.request.MakeSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.response.SharedLinkResponseDto;
 import com.woowacamp.storage.domain.shredlink.entity.SharedLink;
 import com.woowacamp.storage.domain.shredlink.entity.SharedLinkFactory;
+import com.woowacamp.storage.domain.shredlink.event.CancelSharingEvent;
 import com.woowacamp.storage.domain.shredlink.event.ShareEvent;
 import com.woowacamp.storage.domain.shredlink.repository.SharedLinkRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
@@ -41,7 +43,7 @@ public class SharedLinkService {
 	 */
 	@Transactional
 	public SharedLinkResponseDto createShareLink(MakeSharedLinkRequestDto requestDto) {
-		validateRequest(requestDto);
+		validateRequest(requestDto.userId(), requestDto.isFile(), requestDto.targetId());
 
 		// 기존에 발급된 링크가 있다면 반환
 		Optional<SharedLink> existingSharedLink = getExistingSharedLink(requestDto.isFile(), requestDto.targetId(),
@@ -63,17 +65,17 @@ public class SharedLinkService {
 		return new SharedLinkResponseDto(createSharedLinkUrl(sharedLink.getSharedId()));
 	}
 
-	private void validateRequest(MakeSharedLinkRequestDto requestDto) {
-		if (requestDto.isFile()) { // file인 경우
-			FileMetadata fileMetadata = fileMetadataJpaRepository.findById(requestDto.targetId())
+	private void validateRequest(Long userId, boolean isFile, long targetId) {
+		if (isFile) { // file인 경우
+			FileMetadata fileMetadata = fileMetadataJpaRepository.findById(targetId)
 				.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
-			if (!Objects.equals(fileMetadata.getOwnerId(), requestDto.userId())) {
+			if (!Objects.equals(fileMetadata.getOwnerId(), userId)) {
 				throw ErrorCode.ACCESS_DENIED.baseException();
 			}
 		} else { // folder인 경우
-			FolderMetadata folderMetadata = folderMetadataRepository.findById(requestDto.targetId())
+			FolderMetadata folderMetadata = folderMetadataRepository.findById(targetId)
 				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
-			if (!Objects.equals(folderMetadata.getOwnerId(), requestDto.userId())) {
+			if (!Objects.equals(folderMetadata.getOwnerId(), userId)) {
 				throw ErrorCode.ACCESS_DENIED.baseException();
 			}
 		}
@@ -113,5 +115,12 @@ public class SharedLinkService {
 			throw ErrorCode.EXPIRED_SHARED_LINK.baseException();
 		}
 		return sharedLink.getRedirectUrl();
+	}
+
+	@Transactional
+	public void cancelShare(CancelSharedLinkRequestDto requestDto) {
+		validateRequest(requestDto.userId(), requestDto.isFile(), requestDto.targetId());
+		applicationEventPublisher.publishEvent(
+			new CancelSharingEvent(this, requestDto.isFile(), requestDto.targetId()));
 	}
 }

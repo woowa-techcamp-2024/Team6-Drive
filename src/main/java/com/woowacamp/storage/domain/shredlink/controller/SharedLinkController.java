@@ -3,6 +3,7 @@ package com.woowacamp.storage.domain.shredlink.controller;
 import java.io.IOException;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.woowacamp.storage.domain.shredlink.dto.request.CancelSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.request.MakeSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.response.SharedLinkResponseDto;
 import com.woowacamp.storage.domain.shredlink.service.SharedLinkService;
@@ -41,5 +43,10 @@ public class SharedLinkController {
 		@NotBlank @RequestParam String sharedId, HttpServletResponse response) throws
 		IOException {
 		response.sendRedirect(sharedLinkService.getRedirectUrl(sharedId) + "?userId =" + userId);
+	}
+
+	@DeleteMapping
+	public void createSharedLink(@Valid @RequestBody CancelSharedLinkRequestDto requestDto) {
+		sharedLinkService.cancelShare(requestDto);
 	}
 }
