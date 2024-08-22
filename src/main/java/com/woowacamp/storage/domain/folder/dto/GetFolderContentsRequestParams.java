@@ -4,13 +4,14 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Sort;
 
+import com.woowacamp.storage.global.constant.CommonConstant;
+
 import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @NotNull @Positive Long cursorId,
-											 @NotNull CursorType cursorType, @Min(0) @Max(MAX_SIZE) int limit,
+public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @Positive Long cursorId,
+											 @NotNull CursorType cursorType, @Positive @Max(MAX_SIZE) Integer limit,
 											 FolderContentsSortField sortBy, Sort.Direction sortDirection,
 											 LocalDateTime localDateTime, Long size) {
 	private static final int MAX_SIZE = 1000;
@@ -18,7 +19,7 @@ public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @No
 
 	// 기본 생성자 정의
 	public GetFolderContentsRequestParams {
-		if (limit == 0) {
+		if (limit == null) {
 			limit = DEFAULT_SIZE;
 		}
 		if (sortBy == null) {
@@ -26,6 +27,14 @@ public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @No
 		}
 		if (sortDirection == null) {
 			sortDirection = Sort.Direction.DESC;
+		}
+
+		if (cursorId == null) {
+			cursorId = sortDirection.isAscending() ? Long.MAX_VALUE : 1L;
+		}
+
+		if (cursorType == null) {
+			cursorType = CursorType.FOLDER;
 		}
 
 		if (isFirstPage(localDateTime, size)) {
