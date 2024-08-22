@@ -11,6 +11,6 @@ public class CommonConstant {
 	public static final int FILE_WRITER_QUEUE_SIZE = 400;
 	public static final int ORPHAN_PARENT_ID = -1;
 	public static final int SHARED_LINK_VALID_TIME = 3 * 60 * 60;
-	public static final String SHARED_URI = "/api/v1/share?sharedId=";
-	public static final LocalDateTime SHARED_EXPIRED_AT = LocalDateTime.MIN;
+	public static final LocalDateTime UNAVAILABLE_TIME = LocalDateTime.of(1970, 1, 1, 1, 0);
+	public static final String SHARED_LINK_URI = "/api/v1/share?sharedId=";
 }

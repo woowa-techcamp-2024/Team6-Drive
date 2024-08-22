@@ -32,7 +32,7 @@ public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @No
 			switch (sortBy) {
 				case CREATED_AT:
 					if (sortDirection.isAscending()) {
-						localDateTime = LocalDateTime.of(1970, 1, 1, 0, 0);
+						localDateTime = CommonConstant.UNAVAILABLE_TIME;
 					} else {
 						localDateTime = LocalDateTime.now().plusYears(1000);
 					}
