@@ -58,13 +58,14 @@ public class S3FileService {
 		User user = userRepository.findById(formMetadataDto.getUserId())
 			.orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
 		validateRequest(formMetadataDto, partContext, user, fileName, fileType);
+		FolderMetadata folderMetadata = folderMetadataRepository.findById(formMetadataDto.getParentFolderId()).get();
 
 		String uuidFileName = getUuidFileName();
 
 		// 1차 메타데이터 생성
 		// TODO: 공유 기능이 생길 때, creatorId, ownerId 따로
 		FileMetadata fileMetadata = fileMetadataRepository.save(
-			FileMetadataFactory.buildInitialMetadata(user, formMetadataDto.getParentFolderId(),
+			FileMetadataFactory.buildInitialMetadata(user, folderMetadata,
 				formMetadataDto.getFileSize(), uuidFileName, fileName, fileType));
 
 		return FileMetadataDto.of(fileMetadata);
