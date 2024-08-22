@@ -2,7 +2,8 @@ package com.woowacamp.storage.domain.file.entity;
 
 import java.time.LocalDateTime;
 
-import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
+import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 
 import jakarta.persistence.Column;
@@ -130,5 +131,14 @@ public class FileMetadata {
 
 	public void updateParentFolderId(Long parentFolderId) {
 		this.parentFolderId = parentFolderId;
+	}
+
+	public void updateShareStatus(PermissionType permissionType, LocalDateTime sharingExpiredAt) {
+		if (permissionType == null || permissionType.equals(PermissionType.NONE)) {
+			throw new IllegalArgumentException("잘못된 공유 권한 수정 입니다.");
+		}
+		this.isShared = true;
+		this.permissionType = permissionType;
+		this.sharingExpiredAt = sharingExpiredAt;
 	}
 }

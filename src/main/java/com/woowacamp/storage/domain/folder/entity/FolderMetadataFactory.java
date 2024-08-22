@@ -3,9 +3,9 @@ package com.woowacamp.storage.domain.folder.entity;
 import java.time.LocalDateTime;
 
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
-import com.woowacamp.storage.domain.shredlink.entity.PermissionType;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.PermissionType;
 
 public class FolderMetadataFactory {
 	public static FolderMetadata createFolderMetadataBySignup(LocalDateTime localDateTime, String folderName) {
@@ -14,7 +14,7 @@ public class FolderMetadataFactory {
 			.updatedAt(localDateTime)
 			.uploadFolderName(folderName)
 			.isShared(false)
-			.sharingExpiredAt(CommonConstant.SHARED_EXPIRED_AT)
+			.sharingExpiredAt(CommonConstant.UNAVAILABLE_TIME)
 			.permissionType(PermissionType.NONE)
 			.build();
 	}
@@ -29,7 +29,7 @@ public class FolderMetadataFactory {
 			.parentFolderId(req.parentFolderId())
 			.uploadFolderName(req.uploadFolderName())
 			.isShared(false)
-			.sharingExpiredAt(CommonConstant.SHARED_EXPIRED_AT)
+			.sharingExpiredAt(CommonConstant.UNAVAILABLE_TIME)
 			.permissionType(PermissionType.NONE)
 			.build();
 	}

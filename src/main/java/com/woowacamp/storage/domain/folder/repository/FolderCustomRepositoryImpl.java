@@ -12,6 +12,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.entity.QFolderMetadata;
+import com.woowacamp.storage.global.constant.PermissionType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -73,4 +74,14 @@ public class FolderCustomRepositoryImpl implements FolderCustomRepository {
 		return query.fetch();
 	}
 
+	public long updateShareStatus(List<Long> ids, boolean isShared, PermissionType permissionType,
+		LocalDateTime sharingExpireAt) {
+		return queryFactory.update(folderMetadata)
+			.set(folderMetadata.isShared, isShared)
+			.set(folderMetadata.permissionType, permissionType)
+			.set(folderMetadata.sharingExpiredAt, sharingExpireAt)
+			.set(folderMetadata.isShared, true)
+			.where(folderMetadata.id.in(ids))
+			.execute();
+	}
 }

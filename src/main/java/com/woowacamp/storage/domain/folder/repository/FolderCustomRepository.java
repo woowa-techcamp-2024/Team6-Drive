@@ -7,8 +7,12 @@ import org.springframework.data.domain.Sort;
 
 import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
+import com.woowacamp.storage.global.constant.PermissionType;
 
 public interface FolderCustomRepository {
-	public List<FolderMetadata> selectFoldersWithPagination(long parentId, long cursorId,
+	List<FolderMetadata> selectFoldersWithPagination(long parentId, long cursorId,
 		FolderContentsSortField sortBy, Sort.Direction direction, int limit, LocalDateTime dateTime, Long size);
+
+	long updateShareStatus(List<Long> ids, boolean isShared, PermissionType permissionType,
+		LocalDateTime sharingExpireAt);
 }
