@@ -18,7 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "shared_link", uniqueConstraints = {@UniqueConstraint(columnNames = {"shared_link_url"}),
+@Table(name = "shared_link", uniqueConstraints = {@UniqueConstraint(columnNames = {"shared_id"}),
 	@UniqueConstraint(columnNames = {"shared_token"})})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -37,6 +37,9 @@ public class SharedLink {
 	@Column(name = "shared_link_url", columnDefinition = "VARCHAR(300) NOT NULL")
 	@NotNull
 	private String sharedLinkUrl;
+
+	@Column(name = "shared_id", columnDefinition = "VARCHAR(100) NOT NULL")
+	private String sharedId;
 
 	// 공유하는 사용자의 pk
 	@Column(name = "shared_user_id", columnDefinition = "BIGINT NOT NULL")
@@ -66,16 +69,21 @@ public class SharedLink {
 	private PermissionType permissionType;
 
 	@Builder
-	public SharedLink(Long id, LocalDateTime createdAt, String sharedLinkUrl, Long sharedUserId, String sharedToken,
-		LocalDateTime expiredAt, Boolean isFile, Long targetId, PermissionType permissionType) {
+	public SharedLink(Long id, LocalDateTime createdAt, String sharedLinkUrl, String sharedId, Long sharedUserId,
+		String sharedToken, LocalDateTime expiredAt, Boolean isFile, Long targetId, PermissionType permissionType) {
 		this.id = id;
 		this.createdAt = createdAt;
 		this.sharedLinkUrl = sharedLinkUrl;
 		this.sharedUserId = sharedUserId;
+		this.sharedId = sharedId;
 		this.sharedToken = sharedToken;
 		this.expiredAt = expiredAt;
 		this.isFile = isFile;
 		this.targetId = targetId;
 		this.permissionType = permissionType;
+	}
+
+	public boolean isExpired() {
+		return LocalDateTime.now().isAfter(expiredAt);
 	}
 }
