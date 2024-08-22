@@ -38,6 +38,11 @@ public class ThumbnailWriterThreadPool {
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String BUCKET_NAME;
 
+	/**
+	 * MAX_POOL_SIZE는 톰캣 커넥션 풀 스레드 개수와 동일하게 설정합니다.
+	 * MAX_POOL_SIZE가 톰캣 커넥션 풀 스레드 개수보다 작다면 썸네일을 생성하는 작업이 blocking 돼서 PipedOutputStream이 오버플로우 될 수도 있습니다.
+	 * 어짜피 파일 업로드와 썸네일 생성은 1:1로 동작하기 때문에 SynchronousQueue로 큐에 작업이 전달되자마자 스레드가 작업을 받아서 처리하도록 했습니다.
+	 */
 	public ThumbnailWriterThreadPool(AmazonS3 amazonS3) {
 		this.amazonS3 = amazonS3;
 		executorService = new ThreadPoolExecutor(
@@ -49,6 +54,12 @@ public class ThumbnailWriterThreadPool {
 		);
 	}
 
+	/**
+	 * PipedInputStream을 파라미터로 전달 받습니다.
+	 * 전달받은 스트림으로 ImageReader 객체를 만들어 BufferedImage 객체를 생성합니다.
+	 * 원본 이미지의 종횡비를 이용해 썸네일 파일의 높이와 넓이를 구합니다.
+	 * 이후 원본 이미지로 썸네일 이미지를 생성합니다.
+	 */
 	public void createThumbnail(UploadContext context) {
 		executorService.execute(() -> {
 			ImageReader reader = null;
