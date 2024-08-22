@@ -8,10 +8,11 @@ import com.woowacamp.storage.global.constant.CommonConstant;
 import com.woowacamp.storage.global.constant.PermissionType;
 
 public class FolderMetadataFactory {
-	public static FolderMetadata createFolderMetadataBySignup(LocalDateTime localDateTime, String folderName) {
+	public static FolderMetadata createFolderMetadataBySignup(String folderName) {
+		LocalDateTime now = LocalDateTime.now();
 		return FolderMetadata.builder()
-			.createdAt(localDateTime)
-			.updatedAt(localDateTime)
+			.createdAt(now)
+			.updatedAt(now)
 			.uploadFolderName(folderName)
 			.isShared(false)
 			.sharingExpiredAt(CommonConstant.UNAVAILABLE_TIME)
@@ -19,18 +20,20 @@ public class FolderMetadataFactory {
 			.build();
 	}
 
-	public static FolderMetadata createFolderMetadata(User user, LocalDateTime now, CreateFolderReqDto req) {
+	public static FolderMetadata createFolderMetadata(User user, FolderMetadata parentFolder,
+		CreateFolderReqDto req) {
+		LocalDateTime now = LocalDateTime.now();
 		return FolderMetadata.builder()
 			.rootId(user.getRootFolderId())
-			.ownerId(user.getId())
+			.ownerId(parentFolder.getOwnerId())
 			.creatorId(user.getId())
 			.createdAt(now)
 			.updatedAt(now)
 			.parentFolderId(req.parentFolderId())
 			.uploadFolderName(req.uploadFolderName())
-			.isShared(false)
-			.sharingExpiredAt(CommonConstant.UNAVAILABLE_TIME)
-			.permissionType(PermissionType.NONE)
+			.isShared(parentFolder.isShared())
+			.sharingExpiredAt(parentFolder.getSharingExpiredAt())
+			.permissionType(parentFolder.getPermissionType())
 			.build();
 	}
 }
