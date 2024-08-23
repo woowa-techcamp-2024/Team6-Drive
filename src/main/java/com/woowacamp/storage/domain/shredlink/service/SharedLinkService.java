@@ -1,8 +1,10 @@
 package com.woowacamp.storage.domain.shredlink.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Stack;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,11 +13,9 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
-import com.woowacamp.storage.domain.file.repository.FileMetadataJpaRepository;
-import com.woowacamp.storage.domain.file.service.FileService;
+import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
-import com.woowacamp.storage.domain.folder.service.FolderService;
 import com.woowacamp.storage.domain.shredlink.dto.request.CancelSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.request.MakeSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.response.SharedLinkResponseDto;
@@ -34,9 +34,7 @@ import lombok.RequiredArgsConstructor;
 public class SharedLinkService {
 	private final SharedLinkRepository sharedLinkRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
-	private final FileMetadataJpaRepository fileMetadataJpaRepository;
-	private final FolderService folderService;
-	private final FileService fileService;
+	private final FileMetadataRepository fileMetadataRepository;
 
 	/**
 	 * 공유 링크 생성 메소드
@@ -121,11 +119,50 @@ public class SharedLinkService {
 
 	public void updateShareStatus(SharedLink sharedLink) {
 		if (Boolean.TRUE.equals(sharedLink.getIsFile())) {
-			fileService.updateShareStatus(sharedLink.getTargetId(), sharedLink.getPermissionType(),
+			updateFileShareStatus(sharedLink.getTargetId(), sharedLink.getPermissionType(),
 				sharedLink.getExpiredAt());
 		} else {
-			folderService.updateSubFolderShareStatus(sharedLink.getTargetId(),
+			updateSubFolderShareStatus(sharedLink.getTargetId(),
 				sharedLink.getPermissionType(), sharedLink.getExpiredAt());
+		}
+	}
+
+	public void updateFileShareStatus(Long fileId, PermissionType permissionType, LocalDateTime sharingExpireAt) {
+		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
+			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+		fileMetadata.updateShareStatus(permissionType, sharingExpireAt);
+	}
+
+	public void updateSubFolderShareStatus(Long folderId, PermissionType permissionType,
+		LocalDateTime sharingExpireAt) {
+		FolderMetadata folder = folderMetadataRepository.findById(folderId)
+			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+		folder.updateShareStatus(permissionType, sharingExpireAt);
+
+		Stack<Long> folderIdStack = new Stack<>();
+		Stack<Long> fileIdStack = new Stack<>();
+		folderIdStack.push(folderId);
+
+		while (!folderIdStack.isEmpty()) {
+			Long currentFolderId = folderIdStack.pop();
+
+			// 하위의 파일 조회
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderIdForUpdate(
+				currentFolderId);
+
+			// 하위 파일의 공유 상태 수정
+			childFileMetadata.forEach(fileMetadata -> {
+				fileMetadata.updateShareStatus(permissionType, sharingExpireAt);
+			});
+
+			// 하위의 폴더 조회
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
+
+			// 하위 폴더들을 스택에 추가
+			for (FolderMetadata childFolder : childFolders) {
+				childFolder.updateShareStatus(permissionType, sharingExpireAt);
+				folderIdStack.push(childFolder.getId());
+			}
 		}
 	}
 
@@ -138,9 +175,42 @@ public class SharedLinkService {
 	private void cancelShare(boolean isFile, Long targetId) {
 		sharedLinkRepository.deleteByIsFileAndTargetId(isFile, targetId);
 		if (isFile) {
-			fileService.cancelShare(targetId);
+			FileMetadata fileMetadata = fileMetadataRepository.findById(targetId)
+				.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+			fileMetadata.cancelShare();
 		} else {
-			folderService.cancelShare(targetId);
+			cancelFolderShare(targetId);
+		}
+	}
+
+	public void cancelFolderShare(Long folderId) {
+		FolderMetadata folder = folderMetadataRepository.findById(folderId)
+			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+		folder.cancelShare();
+
+		Stack<Long> folderIdStack = new Stack<>();
+		folderIdStack.push(folderId);
+
+		while (!folderIdStack.isEmpty()) {
+			Long currentFolderId = folderIdStack.pop();
+
+			// 하위의 파일 조회
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderId(
+				currentFolderId);
+
+			// 하위 파일의 공유 상태 수정
+			childFileMetadata.forEach(fileMetadata -> {
+				fileMetadata.cancelShare();
+			});
+
+			// 하위의 폴더 조회
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
+
+			// 하위 폴더들을 스택에 추가
+			for (FolderMetadata childFolder : childFolders) {
+				childFolder.cancelShare();
+				folderIdStack.push(childFolder.getId());
+			}
 		}
 	}
 }

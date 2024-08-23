@@ -34,7 +34,6 @@ import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.domain.user.entity.User;
 import com.woowacamp.storage.domain.user.repository.UserRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
-import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 import com.woowacamp.storage.global.error.ErrorCode;
 
@@ -355,75 +354,4 @@ public class FolderService {
 			});
 		}
 	}
-
-	@Transactional
-	public void updateSubFolderShareStatus(Long folderId, PermissionType permissionType,
-		LocalDateTime sharingExpireAt) {
-		FolderMetadata folder = folderMetadataRepository.findById(folderId)
-			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
-		folder.updateShareStatus(permissionType, sharingExpireAt);
-
-		Stack<Long> folderIdStack = new Stack<>();
-		Stack<Long> fileIdStack = new Stack<>();
-		folderIdStack.push(folderId);
-
-		while (!folderIdStack.isEmpty()) {
-			Long currentFolderId = folderIdStack.pop();
-
-			// 하위의 파일 조회
-			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderIdForUpdate(
-				currentFolderId);
-
-			// 하위 파일의 공유 상태 수정
-			childFileMetadata.forEach(fileMetadata -> {
-				fileMetadata.updateShareStatus(permissionType, sharingExpireAt);
-			});
-
-			// 하위의 폴더 조회
-			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
-
-			// 하위 폴더들을 스택에 추가
-			for (FolderMetadata childFolder : childFolders) {
-				childFolder.updateShareStatus(permissionType, sharingExpireAt);
-				folderIdStack.push(childFolder.getId());
-			}
-		}
-	}
-
-	/**
-	 * 폴더 공유 취소 메소드입니다.
-	 * 폴더, 하위 폴더 및 파일의 공유를 취소합니다.
-	 */
-	@Transactional
-	public void cancelShare(Long folderId) {
-		FolderMetadata folder = folderMetadataRepository.findById(folderId)
-			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
-		folder.cancelShare();
-
-		Stack<Long> folderIdStack = new Stack<>();
-		folderIdStack.push(folderId);
-
-		while (!folderIdStack.isEmpty()) {
-			Long currentFolderId = folderIdStack.pop();
-
-			// 하위의 파일 조회
-			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderId(
-				currentFolderId);
-
-			// 하위 파일의 공유 상태 수정
-			childFileMetadata.forEach(fileMetadata -> {
-				fileMetadata.cancelShare();
-			});
-
-			// 하위의 폴더 조회
-			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
-
-			// 하위 폴더들을 스택에 추가
-			for (FolderMetadata childFolder : childFolders) {
-				childFolder.cancelShare();
-				folderIdStack.push(childFolder.getId());
-			}
-		}
-	}
-
 }
