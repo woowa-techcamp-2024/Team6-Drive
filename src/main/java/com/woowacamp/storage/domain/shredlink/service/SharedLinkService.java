@@ -1,6 +1,7 @@
 package com.woowacamp.storage.domain.shredlink.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -137,10 +138,14 @@ public class SharedLinkService {
 		LocalDateTime sharingExpireAt) {
 		FolderMetadata folder = folderMetadataRepository.findById(folderId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
-		folder.updateShareStatus(permissionType, sharingExpireAt);
+		folder.cancelShare();
 
 		Stack<Long> folderIdStack = new Stack<>();
 		folderIdStack.push(folderId);
+
+		List<Long> folderIdsToUpdate = new ArrayList<>();
+		List<Long> fileIdsToUpdate = new ArrayList<>();
+		folderIdsToUpdate.add(folderId);
 
 		while (!folderIdStack.isEmpty()) {
 			Long currentFolderId = folderIdStack.pop();
@@ -151,7 +156,7 @@ public class SharedLinkService {
 
 			// 하위 파일의 공유 상태 수정
 			childFileMetadata.forEach(fileMetadata -> {
-				fileMetadata.updateShareStatus(permissionType, sharingExpireAt);
+				fileIdsToUpdate.add(fileMetadata.getId());
 			});
 
 			// 하위의 폴더 조회
@@ -159,10 +164,14 @@ public class SharedLinkService {
 
 			// 하위 폴더들을 스택에 추가
 			for (FolderMetadata childFolder : childFolders) {
-				childFolder.updateShareStatus(permissionType, sharingExpireAt);
+				folderIdsToUpdate.add(childFolder.getId());
 				folderIdStack.push(childFolder.getId());
 			}
 		}
+		fileMetadataRepository.updateShareStatusInBatch(fileIdsToUpdate, permissionType,
+			sharingExpireAt);
+		folderMetadataRepository.updateShareStatusInBatch(folderIdsToUpdate, permissionType,
+			sharingExpireAt);
 	}
 
 	@Transactional
@@ -190,6 +199,10 @@ public class SharedLinkService {
 		Stack<Long> folderIdStack = new Stack<>();
 		folderIdStack.push(folderId);
 
+		List<Long> folderIdsToUpdate = new ArrayList<>();
+		List<Long> fileIdsToUpdate = new ArrayList<>();
+		folderIdsToUpdate.add(folderId);
+
 		while (!folderIdStack.isEmpty()) {
 			Long currentFolderId = folderIdStack.pop();
 
@@ -198,16 +211,22 @@ public class SharedLinkService {
 				currentFolderId);
 
 			// 하위 파일의 공유 상태 수정
-			childFileMetadata.forEach(FileMetadata::cancelShare);
+			childFileMetadata.forEach(fileMetadata -> {
+				fileIdsToUpdate.add(fileMetadata.getId());
+			});
 
 			// 하위의 폴더 조회
 			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
 
 			// 하위 폴더들을 스택에 추가
 			for (FolderMetadata childFolder : childFolders) {
-				childFolder.cancelShare();
+				folderIdsToUpdate.add(childFolder.getId());
 				folderIdStack.push(childFolder.getId());
 			}
 		}
+		fileMetadataRepository.updateShareStatusInBatch(fileIdsToUpdate, PermissionType.NONE,
+			CommonConstant.UNAVAILABLE_TIME);
+		folderMetadataRepository.updateShareStatusInBatch(folderIdsToUpdate, PermissionType.NONE,
+			CommonConstant.UNAVAILABLE_TIME);
 	}
 }

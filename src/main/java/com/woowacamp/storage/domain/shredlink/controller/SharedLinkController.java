@@ -46,7 +46,7 @@ public class SharedLinkController {
 	}
 
 	@DeleteMapping
-	public void createSharedLink(@Valid @RequestBody CancelSharedLinkRequestDto requestDto) {
+	public void deleteSharedLink(@Valid @RequestBody CancelSharedLinkRequestDto requestDto) {
 		sharedLinkService.cancelShare(requestDto);
 	}
 }

@@ -13,6 +13,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.entity.QFileMetadata;
 import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 
 import lombok.RequiredArgsConstructor;
@@ -74,5 +75,15 @@ public class FileCustomRepositoryImpl implements FileCustomRepository {
 		query.limit(limit);
 
 		return query.fetch();
+	}
+
+	@Override
+	public void updateShareStatusInBatch(List<Long> fileIdsToUpdate, PermissionType permissionType,
+		LocalDateTime sharingExpireAt) {
+		queryFactory.update(fileMetadata)
+			.set(fileMetadata.permissionType, permissionType)
+			.set(fileMetadata.sharingExpiredAt, sharingExpireAt)
+			.where(fileMetadata.id.in(fileIdsToUpdate))
+			.execute();
 	}
 }
