@@ -75,24 +75,13 @@ public class PermissionCheckAspect {
 				FieldType fieldType = checkField.value();
 				Object newValue = null;
 				switch (fieldType) {
-					case USER_ID:
-						newValue = permissionFieldsDto.getOwnerId();
-						break;
-					case FILE_ID:
-						newValue = permissionFieldsDto.getFileId();
-						break;
-					case FOLDER_ID:
-						newValue = permissionFieldsDto.getFolderId();
-						break;
-					case MOVE_FOLDER_ID:
-						newValue = permissionFieldsDto.getMoveFolderId();
-						break;
-					case CREATOR_ID:
-						newValue = permissionFieldsDto.getUserId();
-						break;
+					case USER_ID -> newValue = permissionFieldsDto.getOwnerId();
+					case FILE_ID -> newValue = permissionFieldsDto.getFileId();
+					case FOLDER_ID -> newValue = permissionFieldsDto.getFolderId();
+					case MOVE_FOLDER_ID -> newValue = permissionFieldsDto.getMoveFolderId();
+					case CREATOR_ID -> newValue = permissionFieldsDto.getUserId();
 				}
 				if (newValue != null) {
-					// updateParameterValue(args, parameter, newValue);
 					args[i] = convertValueIfNeeded(newValue, parameter.getType());
 				}
 			}
@@ -119,20 +108,11 @@ public class PermissionCheckAspect {
 								Object newValue = null;
 								FieldType fieldType = dtoCheckField.value();
 								switch (fieldType) {
-									case USER_ID:
-										newValue = permissionFieldsDto.getOwnerId();
-										break;
-									case FILE_ID:
-										newValue = permissionFieldsDto.getFileId();
-										break;
-									case FOLDER_ID:
-										newValue = permissionFieldsDto.getFolderId();
-									case MOVE_FOLDER_ID:
-										newValue = permissionFieldsDto.getMoveFolderId();
-										break;
-									case CREATOR_ID:
-										newValue = permissionFieldsDto.getUserId();
-										break;
+									case USER_ID -> newValue = permissionFieldsDto.getOwnerId();
+									case FILE_ID -> newValue = permissionFieldsDto.getFileId();
+									case FOLDER_ID -> newValue = permissionFieldsDto.getFolderId();
+									case MOVE_FOLDER_ID -> newValue = permissionFieldsDto.getMoveFolderId();
+									case CREATOR_ID -> newValue = permissionFieldsDto.getUserId();
 								}
 								if (newValue != null && !newValue.equals(currentValues[j])) {
 									currentValues[j] = convertValueIfNeeded(newValue, components[j].getType());
@@ -143,8 +123,7 @@ public class PermissionCheckAspect {
 
 						if (valueChanged) {
 							Constructor<?> constructor = clazz.getDeclaredConstructor(
-								Arrays.stream(components).map(RecordComponent::getType).toArray(Class<?>[]::new)
-							);
+								Arrays.stream(components).map(RecordComponent::getType).toArray(Class<?>[]::new));
 							args[i] = constructor.newInstance(currentValues);
 						}
 					} catch (Exception e) {

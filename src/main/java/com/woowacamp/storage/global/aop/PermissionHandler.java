@@ -130,9 +130,6 @@ public class PermissionHandler {
 				.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
 		}
 
-		System.out.println(permissionFieldsDto.getFileId());
-		System.out.println(fileMetadata.getId());
-
 		LocalDateTime sharingExpiredAt = fileMetadata.getSharingExpiredAt();
 		Long ownerId = fileMetadata.getOwnerId();
 		PermissionType sharedPermissionType = fileMetadata.getPermissionType();
