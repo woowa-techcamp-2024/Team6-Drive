@@ -182,7 +182,6 @@ public class FolderService {
 	public Long createFolder(CreateFolderReqDto req) {
 		User user = userRepository.findById(req.userId()).orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
 
-		// TODO: 이후 공유 기능이 생길 때, request에 ownerId, creatorId 따로 받아야함
 		long parentFolderId = req.parentFolderId();
 		long userId = req.userId();
 		FolderMetadata parentFolder = folderMetadataRepository.findByIdForUpdate(parentFolderId)
@@ -191,7 +190,6 @@ public class FolderService {
 		validatePermission(parentFolder, userId);
 		validateFolderName(req);
 		validateFolder(req);
-		LocalDateTime now = LocalDateTime.now();
 		FolderMetadata newFolder = folderMetadataRepository.save(createFolderMetadata(user, parentFolder, req));
 		return newFolder.getId();
 	}

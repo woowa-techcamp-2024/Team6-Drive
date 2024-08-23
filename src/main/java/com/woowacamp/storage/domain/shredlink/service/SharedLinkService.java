@@ -67,7 +67,7 @@ public class SharedLinkService {
 
 	private void validateRequest(Long userId, boolean isFile, long targetId) {
 		if (isFile) { // file인 경우
-			FileMetadata fileMetadata = fileMetadataJpaRepository.findById(targetId)
+			FileMetadata fileMetadata = fileMetadataRepository.findById(targetId)
 				.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
 			if (!Objects.equals(fileMetadata.getOwnerId(), userId)) {
 				throw ErrorCode.ACCESS_DENIED.baseException();
@@ -140,7 +140,6 @@ public class SharedLinkService {
 		folder.updateShareStatus(permissionType, sharingExpireAt);
 
 		Stack<Long> folderIdStack = new Stack<>();
-		Stack<Long> fileIdStack = new Stack<>();
 		folderIdStack.push(folderId);
 
 		while (!folderIdStack.isEmpty()) {
@@ -195,16 +194,14 @@ public class SharedLinkService {
 			Long currentFolderId = folderIdStack.pop();
 
 			// 하위의 파일 조회
-			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderId(
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderIdForUpdate(
 				currentFolderId);
 
 			// 하위 파일의 공유 상태 수정
-			childFileMetadata.forEach(fileMetadata -> {
-				fileMetadata.cancelShare();
-			});
+			childFileMetadata.forEach(FileMetadata::cancelShare);
 
 			// 하위의 폴더 조회
-			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
 
 			// 하위 폴더들을 스택에 추가
 			for (FolderMetadata childFolder : childFolders) {
