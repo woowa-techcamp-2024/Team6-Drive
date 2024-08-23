@@ -19,8 +19,6 @@ import com.woowacamp.storage.domain.shredlink.dto.request.MakeSharedLinkRequestD
 import com.woowacamp.storage.domain.shredlink.dto.response.SharedLinkResponseDto;
 import com.woowacamp.storage.domain.shredlink.entity.SharedLink;
 import com.woowacamp.storage.domain.shredlink.entity.SharedLinkFactory;
-import com.woowacamp.storage.domain.shredlink.event.CancelSharingEvent;
-import com.woowacamp.storage.domain.shredlink.event.ShareEvent;
 import com.woowacamp.storage.domain.shredlink.repository.SharedLinkRepository;
 import com.woowacamp.storage.global.constant.CommonConstant;
 import com.woowacamp.storage.global.constant.PermissionType;
@@ -36,6 +34,8 @@ public class SharedLinkService {
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final FileMetadataJpaRepository fileMetadataJpaRepository;
 	private final ApplicationEventPublisher applicationEventPublisher;
+	private final FolderService folderService;
+	private final FileService fileService;
 
 	/**
 	 * 공유 링크 생성 메소드
@@ -60,7 +60,7 @@ public class SharedLinkService {
 		}
 
 		// 비동기로 폴더 및 파일의 공유 상태 업데이트
-		applicationEventPublisher.publishEvent(new ShareEvent(this, sharedLink));
+		updateShareStatus(sharedLink);
 
 		return new SharedLinkResponseDto(createSharedLinkUrl(sharedLink.getSharedId()));
 	}
@@ -117,10 +117,27 @@ public class SharedLinkService {
 		return sharedLink.getRedirectUrl();
 	}
 
+	public void updateShareStatus(SharedLink sharedLink) {
+		if (Boolean.TRUE.equals(sharedLink.getIsFile())) {
+			fileService.updateShareStatus(sharedLink.getTargetId(), sharedLink.getPermissionType(),
+				sharedLink.getExpiredAt());
+		} else {
+			folderService.updateSubFolderShareStatus(sharedLink.getTargetId(),
+				sharedLink.getPermissionType(), sharedLink.getExpiredAt());
+		}
+	}
+
 	@Transactional
 	public void cancelShare(CancelSharedLinkRequestDto requestDto) {
 		validateRequest(requestDto.userId(), requestDto.isFile(), requestDto.targetId());
-		applicationEventPublisher.publishEvent(
-			new CancelSharingEvent(this, requestDto.isFile(), requestDto.targetId()));
+		updateShareStatus(requestDto.isFile(), requestDto.targetId());
+	}
+
+	private void updateShareStatus(boolean isFile, Long targetId) {
+		if (isFile) {
+			fileService.cancelShare(targetId);
+		} else {
+			folderService.cancelShare(targetId);
+		}
 	}
 }
