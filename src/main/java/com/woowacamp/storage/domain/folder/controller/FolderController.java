@@ -18,6 +18,12 @@ import com.woowacamp.storage.domain.folder.dto.GetFolderContentsRequestParams;
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
 import com.woowacamp.storage.domain.folder.dto.request.FolderMoveDto;
 import com.woowacamp.storage.domain.folder.service.FolderService;
+import com.woowacamp.storage.global.annotation.CheckDto;
+import com.woowacamp.storage.global.annotation.CheckField;
+import com.woowacamp.storage.global.annotation.RequestType;
+import com.woowacamp.storage.global.aop.type.FieldType;
+import com.woowacamp.storage.global.aop.type.FileType;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.util.UrlUtil;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,16 +37,18 @@ public class FolderController {
 
 	private final FolderService folderService;
 
+	@RequestType(permission = PermissionType.WRITE, fileType = FileType.FOLDER)
 	@ResponseStatus(HttpStatus.CREATED)
 	@PostMapping
-	public void createFolder(@Valid @RequestBody CreateFolderReqDto req, HttpServletResponse response) {
+	public void createFolder(@CheckDto @Valid @RequestBody CreateFolderReqDto req, HttpServletResponse response) {
 		Long folder = folderService.createFolder(req);
 		response.setHeader("Location", UrlUtil.getAbsoluteUrl("/api/v1/folders/" + folder));
 	}
 
+	@RequestType(permission = PermissionType.READ, fileType = FileType.FOLDER)
 	@GetMapping("/{folderId}")
-	public FolderContentsDto getFolderContents(@PathVariable Long folderId,
-		@Valid @ModelAttribute GetFolderContentsRequestParams request) {
+	public FolderContentsDto getFolderContents(@CheckField(value = FieldType.FOLDER_ID) @PathVariable Long folderId,
+		@CheckDto @Valid @ModelAttribute GetFolderContentsRequestParams request) {
 
 		folderService.checkFolderOwnedBy(folderId, request.userId());
 
@@ -48,16 +56,20 @@ public class FolderController {
 			request.sortBy(), request.sortDirection(), request.localDateTime(), request.size());
 	}
 
+	@RequestType(permission = PermissionType.WRITE, fileType = FileType.FOLDER)
 	@PatchMapping("/{folderId}")
-	public void moveFolder(@PathVariable("folderId") Long sourceFolderId, @RequestBody FolderMoveDto dto) {
+	public void moveFolder(@PathVariable("folderId") @CheckField(value = FieldType.FOLDER_ID) Long sourceFolderId,
+		@CheckDto @RequestBody FolderMoveDto dto) {
 		folderService.checkFolderOwnedBy(sourceFolderId, dto.userId());
 		folderService.checkFolderOwnedBy(dto.targetFolderId(), dto.userId());
 		folderService.moveFolder(sourceFolderId, dto);
 	}
 
+	@RequestType(permission = PermissionType.WRITE, fileType = FileType.FOLDER)
 	@DeleteMapping("/{folderId}")
 	@ResponseStatus(HttpStatus.OK)
-	public void delete(@PathVariable Long folderId, @RequestParam Long userId) {
+	public void delete(@CheckField(FieldType.FOLDER_ID) @PathVariable Long folderId,
+		@CheckField(FieldType.USER_ID) @RequestParam Long userId) {
 		folderService.deleteFolder(folderId, userId);
 	}
 
