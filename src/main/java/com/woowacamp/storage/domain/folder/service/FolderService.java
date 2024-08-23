@@ -357,18 +357,37 @@ public class FolderService {
 	}
 
 	@Transactional
-	public long updateSubFolderShareStatus(long folderId, PermissionType permissionType,
+	public void updateSubFolderShareStatus(Long folderId, PermissionType permissionType,
 		LocalDateTime sharingExpireAt) {
 		FolderMetadata folder = folderMetadataRepository.findById(folderId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+		folder.updateShareStatus(permissionType, sharingExpireAt);
 
-		List<Long> subFolderIds = folderMetadataRepository.getSubFoldersId(folder.getId());
-		long foldersUpdated = folderMetadataRepository.updateShareStatus(subFolderIds, true, permissionType,
-			sharingExpireAt);
+		Stack<Long> folderIdStack = new Stack<>();
+		Stack<Long> fileIdStack = new Stack<>();
+		folderIdStack.push(folderId);
 
-		long filesUpdated = fileMetadataRepository.updateSubFilesShareStatus(subFolderIds, true, permissionType,
-			sharingExpireAt);
-		return foldersUpdated + filesUpdated;
+		while (!folderIdStack.isEmpty()) {
+			Long currentFolderId = folderIdStack.pop();
+
+			// 하위의 파일 조회
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderIdForUpdate(
+				currentFolderId);
+
+			// 하위 파일의 공유 상태 수정
+			childFileMetadata.forEach(fileMetadata -> {
+				fileMetadata.updateShareStatus(permissionType, sharingExpireAt);
+			});
+
+			// 하위의 폴더 조회
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
+
+			// 하위 폴더들을 스택에 추가
+			for (FolderMetadata childFolder : childFolders) {
+				childFolder.updateShareStatus(permissionType, sharingExpireAt);
+				folderIdStack.push(childFolder.getId());
+			}
+		}
 	}
 
 	/**
@@ -376,16 +395,35 @@ public class FolderService {
 	 * 폴더, 하위 폴더 및 파일의 공유를 취소합니다.
 	 */
 	@Transactional
-	public long cancelShare(long folderId) {
+	public void cancelShare(Long folderId) {
 		FolderMetadata folder = folderMetadataRepository.findById(folderId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
+		folder.cancelShare();
 
-		List<Long> subFolderIds = folderMetadataRepository.getSubFoldersId(folder.getId());
-		long foldersUpdated = folderMetadataRepository.updateShareStatus(subFolderIds, false, PermissionType.NONE,
-			UNAVAILABLE_TIME);
+		Stack<Long> folderIdStack = new Stack<>();
+		folderIdStack.push(folderId);
 
-		long filesUpdated = fileMetadataRepository.updateSubFilesShareStatus(subFolderIds, false, PermissionType.NONE,
-			UNAVAILABLE_TIME);
-		return foldersUpdated + filesUpdated;
+		while (!folderIdStack.isEmpty()) {
+			Long currentFolderId = folderIdStack.pop();
+
+			// 하위의 파일 조회
+			List<FileMetadata> childFileMetadata = fileMetadataRepository.findByParentFolderId(
+				currentFolderId);
+
+			// 하위 파일의 공유 상태 수정
+			childFileMetadata.forEach(fileMetadata -> {
+				fileMetadata.cancelShare();
+			});
+
+			// 하위의 폴더 조회
+			List<FolderMetadata> childFolders = folderMetadataRepository.findByParentFolderId(currentFolderId);
+
+			// 하위 폴더들을 스택에 추가
+			for (FolderMetadata childFolder : childFolders) {
+				childFolder.cancelShare();
+				folderIdStack.push(childFolder.getId());
+			}
+		}
 	}
+
 }

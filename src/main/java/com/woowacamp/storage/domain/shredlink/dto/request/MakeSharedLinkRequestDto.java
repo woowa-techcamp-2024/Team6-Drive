@@ -11,7 +11,6 @@ public record MakeSharedLinkRequestDto(
 	@Positive long targetId,
 	@NotNull String permissionType
 ) {
-
 	public PermissionType getPermissionType() {
 		return PermissionType.fromValue(permissionType);
 	}

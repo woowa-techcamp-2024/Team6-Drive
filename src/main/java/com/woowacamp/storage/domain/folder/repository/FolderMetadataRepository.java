@@ -72,19 +72,4 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 			where f.id = :folderId
 		""")
 	Optional<FolderMetadata> findByIdForShare(@Param("folderId") Long folderId);
-
-	@Query(value = """
-						WITH RECURSIVE folder_hierarchy AS(
-						SELECT folder_metadata_id
-						FROM folder_metadata
-						WHERE folder_metadata_id = :folderId	
-						UNION ALL 
-						SELECT f.folder_metadata_id
-						FROM folder_metadata f
-						INNER JOIN folder_hierarchy fh
-						ON f.parent_folder_id = fh.folder_metadata_id
-						)
-				select folder_metadata_id from folder_hierarchy
-		""", nativeQuery = true)
-	List<Long> getSubFoldersId(long folderId);
 }

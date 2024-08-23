@@ -5,9 +5,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
@@ -35,7 +35,6 @@ public class SharedLinkService {
 	private final SharedLinkRepository sharedLinkRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final FileMetadataJpaRepository fileMetadataJpaRepository;
-	private final ApplicationEventPublisher applicationEventPublisher;
 	private final FolderService folderService;
 	private final FileService fileService;
 
@@ -43,9 +42,12 @@ public class SharedLinkService {
 	 * 공유 링크 생성 메소드
 	 *공유 대상 폴더/파일(폴더라면 하위 폴더 및 파일까지)의   공유 상태를 업데이트 하고 공유 링크를 반환합니다.
 	 */
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public SharedLinkResponseDto createShareLink(MakeSharedLinkRequestDto requestDto) {
 		validateRequest(requestDto.userId(), requestDto.isFile(), requestDto.targetId());
+		if (requestDto.getPermissionType().equals(PermissionType.NONE)) {
+			throw ErrorCode.WRONG_PERMISSION_TYPE.baseException();
+		}
 
 		// 기존에 발급된 링크가 있다면 반환
 		Optional<SharedLink> existingSharedLink = getExistingSharedLink(requestDto.isFile(), requestDto.targetId(),
@@ -61,9 +63,7 @@ public class SharedLinkService {
 			throw ErrorCode.DUPLICATED_SHARED_LINK.baseException();
 		}
 
-		// 비동기로 폴더 및 파일의 공유 상태 업데이트
 		updateShareStatus(sharedLink);
-
 		return new SharedLinkResponseDto(createSharedLinkUrl(sharedLink.getSharedId()));
 	}
 
@@ -132,10 +132,11 @@ public class SharedLinkService {
 	@Transactional
 	public void cancelShare(CancelSharedLinkRequestDto requestDto) {
 		validateRequest(requestDto.userId(), requestDto.isFile(), requestDto.targetId());
-		updateShareStatus(requestDto.isFile(), requestDto.targetId());
+		cancelShare(requestDto.isFile(), requestDto.targetId());
 	}
 
-	private void updateShareStatus(boolean isFile, Long targetId) {
+	private void cancelShare(boolean isFile, Long targetId) {
+		sharedLinkRepository.deleteByIsFileAndTargetId(isFile, targetId);
 		if (isFile) {
 			fileService.cancelShare(targetId);
 		} else {

@@ -79,10 +79,6 @@ public class FileMetadata {
 	@NotNull
 	private UploadStatus uploadStatus;
 
-	@Column(name = "is_shared", columnDefinition = "TINYINT(1) NOT NULL")
-	@NotNull
-	private boolean isShared;
-
 	@Column(name = "sharing_expired_at", columnDefinition = "TIMESTAMP NOT NULL")
 	@NotNull
 	private LocalDateTime sharingExpiredAt;
@@ -95,7 +91,7 @@ public class FileMetadata {
 	@Builder
 	public FileMetadata(Long id, Long rootId, Long creatorId, Long ownerId, String fileType, LocalDateTime createdAt,
 		LocalDateTime updatedAt, Long parentFolderId, Long fileSize, String uploadFileName, String uuidFileName,
-		UploadStatus uploadStatus, boolean isShared, LocalDateTime sharingExpiredAt, PermissionType permissionType) {
+		UploadStatus uploadStatus, LocalDateTime sharingExpiredAt, PermissionType permissionType) {
 		this.id = id;
 		this.rootId = rootId;
 		this.creatorId = creatorId;
@@ -108,7 +104,6 @@ public class FileMetadata {
 		this.uploadFileName = uploadFileName;
 		this.uuidFileName = uuidFileName;
 		this.uploadStatus = uploadStatus;
-		this.isShared = isShared;
 		this.sharingExpiredAt = sharingExpiredAt;
 		this.permissionType = permissionType;
 	}
@@ -137,13 +132,11 @@ public class FileMetadata {
 		if (permissionType == null || permissionType.equals(PermissionType.NONE)) {
 			throw new IllegalArgumentException("잘못된 공유 권한 수정 입니다.");
 		}
-		this.isShared = true;
 		this.permissionType = permissionType;
 		this.sharingExpiredAt = sharingExpiredAt;
 	}
 
 	public void cancelShare() {
-		this.isShared = false;
 		this.permissionType = PermissionType.NONE;
 		this.sharingExpiredAt = CommonConstant.UNAVAILABLE_TIME;
 	}

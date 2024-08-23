@@ -14,7 +14,6 @@ public class FolderMetadataFactory {
 			.createdAt(now)
 			.updatedAt(now)
 			.uploadFolderName(folderName)
-			.isShared(false)
 			.sharingExpiredAt(CommonConstant.UNAVAILABLE_TIME)
 			.permissionType(PermissionType.NONE)
 			.build();
@@ -31,7 +30,6 @@ public class FolderMetadataFactory {
 			.updatedAt(now)
 			.parentFolderId(req.parentFolderId())
 			.uploadFolderName(req.uploadFolderName())
-			.isShared(parentFolder.isShared())
 			.sharingExpiredAt(parentFolder.getSharingExpiredAt())
 			.permissionType(parentFolder.getPermissionType())
 			.build();

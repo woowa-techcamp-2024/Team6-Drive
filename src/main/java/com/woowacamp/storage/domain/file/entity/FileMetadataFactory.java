@@ -21,7 +21,6 @@ public class FileMetadataFactory {
 			.uploadStatus(UploadStatus.PENDING)
 			.uploadFileName(fileName)
 			.fileType(fileType)
-			.isShared(parentFolderMetadata.isShared())
 			.sharingExpiredAt(parentFolderMetadata.getSharingExpiredAt())
 			.createdAt(now)
 			.updatedAt(now)
