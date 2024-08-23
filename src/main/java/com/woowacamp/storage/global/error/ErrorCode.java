@@ -3,7 +3,9 @@ package com.woowacamp.storage.global.error;
 import org.springframework.http.HttpStatus;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@Getter
 @AllArgsConstructor
 public enum ErrorCode {
 
@@ -34,9 +36,12 @@ public enum ErrorCode {
 	INVALID_MULTIPART_FORM_DATA(HttpStatus.BAD_REQUEST, "올바른 데이터 형식으로 요청을 보내주세요."),
 	DUPLICATED_SHARED_LINK(HttpStatus.CONFLICT, "공유 링크 생성에 실패했습니다. 잠시 후에 다시 시도해 주세요."),
 	WRONG_PERMISSION_TYPE(HttpStatus.BAD_REQUEST, "잘못된 권한 타입입니다."),
+	SHARED_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "공유 링크를 찾을 수 없습니다."),
+	EXPIRED_SHARED_LINK(HttpStatus.BAD_REQUEST, "만료된 공유 링크입니다."),
 	// 500,
 	FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
-	FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다.");
+	FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다."),
+	PERMISSION_CHECK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "권한 확인 중 예외가 발생했습니다.");
 	private final HttpStatus status;
 	private final String message;
 

@@ -36,6 +36,13 @@ import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.service.FileService;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
+import com.woowacamp.storage.global.annotation.CheckField;
+import com.woowacamp.storage.global.annotation.RequestType;
+import com.woowacamp.storage.global.aop.PermissionFieldsDto;
+import com.woowacamp.storage.global.aop.PermissionHandler;
+import com.woowacamp.storage.global.aop.type.FieldType;
+import com.woowacamp.storage.global.aop.type.FileType;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,15 +62,16 @@ public class MultipartFileController {
 	private final FileWriterThreadPool fileWriterThreadPool;
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FileService fileService;
+	private final PermissionHandler permissionHandler;
 
 	@Value("${cloud.aws.credentials.bucketName}")
-	private String BUCKET_NAME;
+	private String bucketName;
 	@Value("${file.reader.bufferSize}")
-	private int BUFFER_SIZE;
+	private int bufferSize;
 	@Value("${file.reader.lineBufferMaxSize}")
-	private int LINE_BUFFER_MAX_SIZE;
+	private int lineBufferMaxSize;
 	@Value("${file.reader.chunkSize}")
-	private int S3_CHUNK_SIZE;
+	private int s3ChunkSize;
 
 	/**
 	 * MultipartFile은 임시 저장을 해서 직접 request를 통해 multipart/form-data를 파싱했습니다.
@@ -86,7 +94,7 @@ public class MultipartFileController {
 	 * processBuffer 메소드에서 헤더 파싱을 하고 boundary 체크를 하여 각 파트를 구분합니다.
 	 */
 	private void processMultipartData(InputStream inputStream, UploadContext context) throws Exception {
-		byte[] buffer = new byte[BUFFER_SIZE];
+		byte[] buffer = new byte[bufferSize];
 		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream();
 		ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream();
 		PartContext partContext = new PartContext();
@@ -148,8 +156,21 @@ public class MultipartFileController {
 				// boundary 읽은 이후
 				processHeader(line, partContext);
 				if (!partContext.isInHeader() && partContext.getCurrentFileName() != null) {
-					FileMetadataDto fileMetadataDto = s3FileService.createInitialMetadata(
-						FormMetadataDto.of(context.getFormFields()), partContext);
+					FormMetadataDto formMetadataDto = FormMetadataDto.of(context.getFormFields());
+					// PermissionHandler로 접근 권한을 확인한다.
+					PermissionFieldsDto permissionFieldsDto = new PermissionFieldsDto();
+					long userId = formMetadataDto.getUserId();
+					long parentFolderId = formMetadataDto.getParentFolderId();
+					permissionFieldsDto.setUserId(userId);
+					permissionFieldsDto.setFolderId(parentFolderId);
+					// 파일 쓰기는 현재 파일이 존재하지 않으므로 폴더에 대한 권한을 검증하고 통과하면 ownerId를 받아온다.
+					long ownerId = permissionHandler.getOwnerIdAndCheckPermission(
+						PermissionType.WRITE, FileType.FOLDER,
+						permissionFieldsDto);
+					formMetadataDto.setUserId(ownerId);
+					formMetadataDto.setCreatorId(userId);
+
+					FileMetadataDto fileMetadataDto = s3FileService.createInitialMetadata(formMetadataDto, partContext);
 					context.updateFileMetadata(fileMetadataDto);
 					context.updateIsFileRead();
 					partContext.setUploadFileName(fileMetadataDto.uuid());
@@ -220,7 +241,7 @@ public class MultipartFileController {
 		fileWriterThreadPool.initializePartCount(fileName);
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentType(contentType);
-		InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(BUCKET_NAME,
+		InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(bucketName,
 			fileName).withObjectMetadata(metadata);
 
 		return amazonS3.initiateMultipartUpload(initRequest);
@@ -232,7 +253,7 @@ public class MultipartFileController {
 	private void processContent(ByteArrayOutputStream contentBuffer, ByteArrayOutputStream lineBuffer,
 		PartContext partContext, UploadState state) throws Exception {
 		contentBuffer.write(lineBuffer.toByteArray());
-		if (partContext.getCurrentFileName() != null && contentBuffer.size() >= S3_CHUNK_SIZE) {
+		if (partContext.getCurrentFileName() != null && contentBuffer.size() >= s3ChunkSize) {
 			uploadChunk(contentBuffer, state, partContext);
 		}
 	}
@@ -257,11 +278,11 @@ public class MultipartFileController {
 	 */
 	private void checkLineBufferSize(ByteArrayOutputStream lineBuffer, ByteArrayOutputStream contentBuffer,
 		PartContext partContext, UploadState state) throws Exception {
-		if (lineBuffer.size() >= LINE_BUFFER_MAX_SIZE) {
+		if (lineBuffer.size() >= lineBufferMaxSize) {
 			contentBuffer.write(lineBuffer.toByteArray());
 			lineBuffer.reset();
 
-			if (contentBuffer.size() >= S3_CHUNK_SIZE) {
+			if (contentBuffer.size() >= s3ChunkSize) {
 				uploadChunk(contentBuffer, state, partContext);
 			}
 		}
@@ -321,13 +342,14 @@ public class MultipartFileController {
 		return null;
 	}
 
+	@RequestType(permission = PermissionType.READ, fileType = FileType.FILE)
 	@GetMapping("/download/{fileId}")
 	@Validated
-	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId,
-		@Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
+	ResponseEntity<InputStreamResource> download(@CheckField(FieldType.FILE_ID) @PathVariable Long fileId,
+		@CheckField(FieldType.USER_ID) @Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
 
 		FileMetadata fileMetadata = fileService.getFileMetadataBy(fileId, userId);
-		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, BUCKET_NAME, fileMetadata.getUuidFileName());
+		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, bucketName, fileMetadata.getUuidFileName());
 		HttpHeaders headers = new HttpHeaders();
 		// HTTP 응답 헤더에 Content-Type 설정
 		String fileType = fileMetadata.getFileType();

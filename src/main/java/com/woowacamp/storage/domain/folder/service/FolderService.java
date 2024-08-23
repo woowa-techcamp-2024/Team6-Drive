@@ -179,20 +179,19 @@ public class FolderService {
 	 * 이미 제거되어 Null을 리턴한 경우 폴더가 생성되지 않습니다.
 	 */
 	@Transactional
-	public void createFolder(CreateFolderReqDto req) {
+	public Long createFolder(CreateFolderReqDto req) {
 		User user = userRepository.findById(req.userId()).orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
 
-		// TODO: 이후 공유 기능이 생길 때, request에 ownerId, creatorId 따로 받아야함
 		long parentFolderId = req.parentFolderId();
 		long userId = req.userId();
-		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(parentFolderId)
+		FolderMetadata parentFolder = folderMetadataRepository.findByIdForUpdate(parentFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
 
-		validatePermission(folderMetadata, userId);
+		validatePermission(parentFolder, userId);
 		validateFolderName(req);
 		validateFolder(req);
-		LocalDateTime now = LocalDateTime.now();
-		folderMetadataRepository.save(createFolderMetadata(user, now, req));
+		FolderMetadata newFolder = folderMetadataRepository.save(createFolderMetadata(user, parentFolder, req));
+		return newFolder.getId();
 	}
 
 	/**
@@ -213,7 +212,7 @@ public class FolderService {
 	 * 부모 폴더가 요청한 사용자의 폴더인지 확인
 	 */
 	private void validatePermission(FolderMetadata folderMetadata, long userId) {
-		if (!folderMetadata.getCreatorId().equals(userId)) {
+		if (!folderMetadata.getOwnerId().equals(userId)) {
 			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
 	}
@@ -353,5 +352,4 @@ public class FolderService {
 			});
 		}
 	}
-
 }

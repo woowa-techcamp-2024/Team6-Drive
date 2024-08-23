@@ -57,7 +57,7 @@ public class S3FileService {
 		String fileType = getFileTypeByFileName(fileName);
 		User user = userRepository.findById(formMetadataDto.getUserId())
 			.orElseThrow(ErrorCode.USER_NOT_FOUND::baseException);
-		validateRequest(formMetadataDto, partContext, user, fileName, fileType);
+		FolderMetadata parentFolderMetadata = validateRequest(formMetadataDto, partContext, user, fileName, fileType);
 
 		String uuidFileName = getUuidFileName();
 
@@ -65,7 +65,8 @@ public class S3FileService {
 		// TODO: 공유 기능이 생길 때, creatorId, ownerId 따로
 		FileMetadata fileMetadata = fileMetadataRepository.save(
 			FileMetadataFactory.buildInitialMetadata(user, formMetadataDto.getParentFolderId(),
-				formMetadataDto.getFileSize(), uuidFileName, fileName, fileType));
+				formMetadataDto.getFileSize(), uuidFileName, fileName, fileType, formMetadataDto.getCreatorId(),
+				parentFolderMetadata));
 
 		return FileMetadataDto.of(fileMetadata);
 	}
@@ -110,11 +111,15 @@ public class S3FileService {
 	/**
 	 * validateParentFolder를 먼저 호출해야 부모 폴더에 락이 걸려서 같은 파일 이름으로 동시에 써지지 않는다.
 	 */
-	private void validateRequest(FormMetadataDto formMetadataDto, PartContext partContext, User user, String fileName,
+	private FolderMetadata validateRequest(FormMetadataDto formMetadataDto, PartContext partContext, User user,
+		String fileName,
 		String fileType) {
 		validateFileSize(formMetadataDto.getFileSize(), user.getRootFolderId());
-		validateParentFolder(formMetadataDto.getParentFolderId(), formMetadataDto.getUserId());
+		FolderMetadata parentFolderMetadata = validateParentFolder(formMetadataDto.getParentFolderId(),
+			formMetadataDto.getUserId());
 		validateFile(partContext, formMetadataDto.getParentFolderId(), fileName, fileType);
+
+		return parentFolderMetadata;
 	}
 
 	private void validateFileSize(long fileSize, Long rootFolderId) {
@@ -150,12 +155,14 @@ public class S3FileService {
 	/**
 	 * 요청한 parentFolderId가 자신의 폴더에 대한 id인지 확인
 	 */
-	private void validateParentFolder(long parentFolderId, long userId) {
+	private FolderMetadata validateParentFolder(long parentFolderId, long userId) {
 		FolderMetadata folderMetadata = folderMetadataRepository.findByIdForUpdate(parentFolderId)
 			.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
-		if (!Objects.equals(folderMetadata.getCreatorId(), userId)) {
+		if (!Objects.equals(folderMetadata.getOwnerId(), userId)) {
 			throw ACCESS_DENIED.baseException();
 		}
+
+		return folderMetadata;
 	}
 
 	/**

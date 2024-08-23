@@ -6,15 +6,16 @@ import com.woowacamp.storage.domain.shredlink.dto.request.MakeSharedLinkRequestD
 import com.woowacamp.storage.global.constant.CommonConstant;
 
 public class SharedLinkFactory {
-	public static SharedLink createSharedLink(MakeSharedLinkRequestDto requestDto, String sharedUrl,
-		String sharedToken) {
+
+	public static SharedLink createSharedLink(MakeSharedLinkRequestDto requestDto, String sharedId,
+		String redirectUrl) {
 		LocalDateTime createTime = LocalDateTime.now();
-		LocalDateTime expiredTime = createTime.plusHours(CommonConstant.SHARED_LINK_VALID_TIME);
+		LocalDateTime expiredTime = createTime.plusSeconds(CommonConstant.SHARED_LINK_VALID_TIME);
 		return SharedLink.builder()
 			.createdAt(createTime)
-			.sharedLinkUrl(sharedUrl)
+			.redirectUrl(redirectUrl)
 			.sharedUserId(requestDto.userId())
-			.sharedToken(sharedToken)
+			.sharedId(sharedId)
 			.expiredAt(expiredTime)
 			.isFile(requestDto.isFile())
 			.targetId(requestDto.targetId())
