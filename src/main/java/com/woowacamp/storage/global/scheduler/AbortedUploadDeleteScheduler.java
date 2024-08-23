@@ -56,6 +56,7 @@ public class AbortedUploadDeleteScheduler {
 				abortedUpload -> {
 					amazonS3.abortMultipartUpload(new AbortMultipartUploadRequest(BUCKET_NAME, abortedUpload.getKey(),
 						abortedUpload.getUploadId()));
+					amazonS3.deleteObject(BUCKET_NAME, "thumb_" + abortedUpload.getKey());
 					fileMetadataRepository.deleteByUuidFileName(abortedUpload.getKey());
 				});
 	}

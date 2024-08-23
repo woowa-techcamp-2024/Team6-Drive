@@ -36,6 +36,7 @@ import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.service.FileService;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
+import com.woowacamp.storage.domain.file.service.ThumbnailWriterThreadPool;
 import com.woowacamp.storage.global.annotation.CheckField;
 import com.woowacamp.storage.global.annotation.RequestType;
 import com.woowacamp.storage.global.aop.PermissionFieldsDto;
@@ -62,6 +63,7 @@ public class MultipartFileController {
 	private final FileWriterThreadPool fileWriterThreadPool;
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FileService fileService;
+	private final ThumbnailWriterThreadPool thumbnailWriterThreadPool;
 	private final PermissionHandler permissionHandler;
 
 	@Value("${cloud.aws.credentials.bucketName}")
@@ -112,10 +114,16 @@ public class MultipartFileController {
 			if (context.getFileMetadata() == null) {
 				throw ErrorCode.INVALID_MULTIPART_FORM_DATA.baseException();
 			}
-
-			fileMetadataRepository.deleteById(context.getFileMetadata().metadataId());
+			fileMetadataRepository.updateUploadStatusById(context.getFileMetadata().metadataId());
 		} catch (AmazonS3Exception e) {
 			log.error("[AmazonS3Exception] 입력 예외로 완성되지 않은 S3 파일 제거 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
+		} finally {
+			if (context.getPis() != null) {
+				context.getPis().close();
+			}
+			if (context.getPos() != null) {
+				context.getPos().close();
+			}
 		}
 	}
 
@@ -171,6 +179,10 @@ public class MultipartFileController {
 					formMetadataDto.setCreatorId(userId);
 
 					FileMetadataDto fileMetadataDto = s3FileService.createInitialMetadata(formMetadataDto, partContext);
+					if (partContext.getCurrentContentType().startsWith("image/")) {
+						String imageFormat = partContext.getCurrentContentType().substring(6);
+						context.updateImageFormat(imageFormat);
+					}
 					context.updateFileMetadata(fileMetadataDto);
 					context.updateIsFileRead();
 					partContext.setUploadFileName(fileMetadataDto.uuid());
@@ -181,6 +193,13 @@ public class MultipartFileController {
 					state.setFileMetadataDto(fileMetadataDto);
 				}
 			} else {
+				if (context.getImageFormat() != null && !context.isAbortedCreateThumbnail()) {
+					context.getPos().write(lineBuffer.toByteArray());
+					if (!context.isStartedCreatedThumbnail()) {
+						context.updateStartedCreatedThumbnail();
+						thumbnailWriterThreadPool.createThumbnail(context);
+					}
+				}
 				processContent(contentBuffer, lineBuffer, partContext, state);
 			}
 			lineBuffer.reset();

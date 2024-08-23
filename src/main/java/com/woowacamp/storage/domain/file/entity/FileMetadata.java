@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.woowacamp.storage.global.constant.CommonConstant;
 import com.woowacamp.storage.global.constant.PermissionType;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 
 import jakarta.persistence.Column;
@@ -79,6 +80,10 @@ public class FileMetadata {
 	@NotNull
 	private UploadStatus uploadStatus;
 
+	@Column(name = "thumbnail_file_name", columnDefinition = "VARCHAR(100) NOT NULL unique")
+	@NotNull
+	private String thumbnailUUID;
+
 	@Column(name = "sharing_expired_at", columnDefinition = "TIMESTAMP NOT NULL")
 	@NotNull
 	private LocalDateTime sharingExpiredAt;
@@ -89,9 +94,23 @@ public class FileMetadata {
 	private PermissionType permissionType;
 
 	@Builder
-	public FileMetadata(Long id, Long rootId, Long creatorId, Long ownerId, String fileType, LocalDateTime createdAt,
-		LocalDateTime updatedAt, Long parentFolderId, Long fileSize, String uploadFileName, String uuidFileName,
-		UploadStatus uploadStatus, LocalDateTime sharingExpiredAt, PermissionType permissionType) {
+	public FileMetadata(
+		Long id,
+		Long rootId,
+		Long creatorId,
+		Long ownerId,
+		String fileType,
+		LocalDateTime createdAt,
+		LocalDateTime updatedAt,
+		Long parentFolderId,
+		Long fileSize,
+		String uploadFileName,
+		String uuidFileName,
+		UploadStatus uploadStatus,
+		String thumbnailUUID,
+		LocalDateTime sharingExpiredAt,
+		PermissionType permissionType
+		) {
 		this.id = id;
 		this.rootId = rootId;
 		this.creatorId = creatorId;
@@ -104,6 +123,7 @@ public class FileMetadata {
 		this.uploadFileName = uploadFileName;
 		this.uuidFileName = uuidFileName;
 		this.uploadStatus = uploadStatus;
+		this.thumbnailUUID = thumbnailUUID;
 		this.sharingExpiredAt = sharingExpiredAt;
 		this.permissionType = permissionType;
 	}

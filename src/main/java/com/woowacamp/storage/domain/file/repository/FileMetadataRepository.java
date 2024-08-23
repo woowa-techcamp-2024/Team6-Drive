@@ -19,25 +19,25 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 
 	boolean existsByUuidFileName(String uuidFileName);
 
-	boolean existsByParentFolderIdAndUploadFileNameAndFileType(Long parentFolderId, String uploadFileName,
-		String fileType);
+	boolean existsByParentFolderIdAndUploadFileNameAndUploadStatusNot(Long parentFolderId, String uploadFileName,
+		UploadStatus uploadStatus);
 
 	@Transactional
 	void deleteByUuidFileName(String uuidFileName);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query(value = """
-			select f from FileMetadata f where f.id = :id
+			select f from FileMetadata f where f.id = :id and f.uploadStatus != 'FAIL'
 		""")
 	Optional<FileMetadata> findByIdForUpdate(@Param("id") Long id);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	Optional<FileMetadata> findByIdAndOwnerId(Long id, Long ownerId);
+	Optional<FileMetadata> findByIdAndOwnerIdAndUploadStatusNot(Long id, Long ownerId, UploadStatus uploadStatus);
 
 	// 부모 폴더에 락을 걸고 조회하는 메소드
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query(value = """
-			select f from FileMetadata f where f.parentFolderId=:parentFolderId
+			select f from FileMetadata f where f.parentFolderId=:parentFolderId and f.uploadStatus != 'FAIL'
 		""")
 	List<FileMetadata> findByParentFolderIdForUpdate(Long parentFolderId);
 
@@ -46,7 +46,7 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 	void deleteAllByIdInBatch(@Param("ids") Iterable<Long> ids);
 
 	// 부모 폴더에 락을 걸지 않고 조회하는 메소드
-	List<FileMetadata> findByParentFolderId(Long parentFolderId);
+	List<FileMetadata> findByParentFolderIdAndUploadStatusNot(Long parentFolderId, UploadStatus uploadStatus);
 
 	@Modifying
 	@Query(value = """
@@ -72,16 +72,27 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 		""")
 	List<FileMetadata> findOrphanFiles(@Param("orphanParentId") int orphanParentId);
 
-	@Modifying
-	@Query(value = """
-			update FileMetadata f
-			set f.uploadStatus = :uploadStatus
-			where f.id = :fileId
-		""")
-	@Transactional
-	void setMetadataStatusFail(@Param("fileId") long fileId, @Param("uploadStatus") UploadStatus uploadStatus);
-
 	boolean existsByParentFolderIdAndUploadStatus(Long parentFolderId, UploadStatus uploadStatus);
+
+	@Transactional
+	@Modifying
+	@Query("""
+			update FileMetadata f set f.uploadStatus = 'FAIL', f.updatedAt = NOW() where f.id = :fileMetadataId
+		""")
+	void updateUploadStatusById(@Param("fileMetadataId") Long fileMetadataId);
+
+	@Transactional
+	@Modifying
+	@Query("""
+			update FileMetadata f set f.uploadStatus = 'FAIL', f.updatedAt = NOW() where f.uuidFileName = :uuid
+		""")
+	void updateUploadStatusByUuid(@Param("uuid") String uuid);
+
+	@Transactional
+	@Query(value = """
+			select * from file_metadata f where f.upload_status = 'FAIL' limit 50;
+		""", nativeQuery = true)
+	List<FileMetadata> findFailedFileMetadata();
 
 	@Lock(LockModeType.PESSIMISTIC_READ)
 	@Query(value = """
