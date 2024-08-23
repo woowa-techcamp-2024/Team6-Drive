@@ -154,12 +154,18 @@ public class PermissionHandler {
 		Long userId, PermissionType sharedPermissionType, PermissionType permissionType) {
 		// 공유 기한이 지났는데 파일에 대한 소유주가 아닌 경우 예외를 반환한다.
 		if (sharingExpiredAt.isBefore(now) && !Objects.equals(userId, ownerId)) {
+			log.error(
+				"[SharingExpired Exception] 권한 검증 중, 공유 기한이 지나고 파일 소유주가 아닌 예외 발생. request user id = {}, file owner id = {}",
+				userId, ownerId);
 			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
 
 		// 읽기 권한만 있는 파일에 쓰기 작업을 시도하면 예외를 반환한다.
 		if (Objects.equals(permissionType, PermissionType.WRITE) && Objects.equals(sharedPermissionType,
 			PermissionType.READ)) {
+			log.error(
+				"[PermissionType Exception] 읽기 권한이 있는 사용자가 쓰기 권한 요청하여 예외 발생.request user id = {}, file owner id = {}",
+				userId, ownerId);
 			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
 	}
