@@ -4,16 +4,18 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Sort;
 
+import com.woowacamp.storage.global.annotation.CheckField;
+import com.woowacamp.storage.global.aop.type.FieldType;
 import com.woowacamp.storage.global.constant.CommonConstant;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-public record GetFolderContentsRequestParams(@NotNull @Positive Long userId, @Positive Long cursorId,
-											 @NotNull CursorType cursorType, @Positive @Max(MAX_SIZE) Integer limit,
-											 FolderContentsSortField sortBy, Sort.Direction sortDirection,
-											 LocalDateTime localDateTime, Long size) {
+public record GetFolderContentsRequestParams(@NotNull @Positive @CheckField(value = FieldType.USER_ID) Long userId,
+											 @NotNull @Positive Long cursorId, @NotNull CursorType cursorType,
+											 @Positive @Max(MAX_SIZE) Integer limit, FolderContentsSortField sortBy,
+											 Sort.Direction sortDirection, LocalDateTime localDateTime, Long size) {
 	private static final int MAX_SIZE = 1000;
 	private static final int DEFAULT_SIZE = 100;
 

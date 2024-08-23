@@ -72,7 +72,7 @@ public class FileService {
 		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
 
-		if (!Objects.equals(fileMetadata.getCreatorId(), userId)) {
+		if (!Objects.equals(fileMetadata.getOwnerId(), userId)) {
 			throw ACCESS_DENIED.baseException();
 		}
 		return fileMetadata;

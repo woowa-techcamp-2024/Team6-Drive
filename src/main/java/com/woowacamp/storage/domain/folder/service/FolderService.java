@@ -215,7 +215,7 @@ public class FolderService {
 	 * 부모 폴더가 요청한 사용자의 폴더인지 확인
 	 */
 	private void validatePermission(FolderMetadata folderMetadata, long userId) {
-		if (!folderMetadata.getCreatorId().equals(userId)) {
+		if (!folderMetadata.getOwnerId().equals(userId)) {
 			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
 	}

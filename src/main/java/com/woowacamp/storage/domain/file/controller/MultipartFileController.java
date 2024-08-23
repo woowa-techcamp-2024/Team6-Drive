@@ -36,6 +36,13 @@ import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.service.FileService;
 import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
+import com.woowacamp.storage.global.annotation.CheckField;
+import com.woowacamp.storage.global.annotation.RequestType;
+import com.woowacamp.storage.global.aop.PermissionFieldsDto;
+import com.woowacamp.storage.global.aop.PermissionHandler;
+import com.woowacamp.storage.global.aop.type.FieldType;
+import com.woowacamp.storage.global.aop.type.FileType;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +62,7 @@ public class MultipartFileController {
 	private final FileWriterThreadPool fileWriterThreadPool;
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FileService fileService;
+	private final PermissionHandler permissionHandler;
 
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String bucketName;
@@ -148,8 +156,21 @@ public class MultipartFileController {
 				// boundary 읽은 이후
 				processHeader(line, partContext);
 				if (!partContext.isInHeader() && partContext.getCurrentFileName() != null) {
-					FileMetadataDto fileMetadataDto = s3FileService.createInitialMetadata(
-						FormMetadataDto.of(context.getFormFields()), partContext);
+					FormMetadataDto formMetadataDto = FormMetadataDto.of(context.getFormFields());
+					// PermissionHandler로 접근 권한을 확인한다.
+					PermissionFieldsDto permissionFieldsDto = new PermissionFieldsDto();
+					long userId = formMetadataDto.getUserId();
+					long parentFolderId = formMetadataDto.getParentFolderId();
+					permissionFieldsDto.setUserId(userId);
+					permissionFieldsDto.setFolderId(parentFolderId);
+					// 파일 쓰기는 현재 파일이 존재하지 않으므로 폴더에 대한 권한을 검증하고 통과하면 ownerId를 받아온다.
+					long ownerId = permissionHandler.getOwnerIdAndCheckPermission(
+						PermissionType.WRITE, FileType.FOLDER,
+						permissionFieldsDto);
+					formMetadataDto.setUserId(ownerId);
+					formMetadataDto.setCreatorId(userId);
+
+					FileMetadataDto fileMetadataDto = s3FileService.createInitialMetadata(formMetadataDto, partContext);
 					context.updateFileMetadata(fileMetadataDto);
 					context.updateIsFileRead();
 					partContext.setUploadFileName(fileMetadataDto.uuid());
@@ -321,10 +342,11 @@ public class MultipartFileController {
 		return null;
 	}
 
+	@RequestType(permission = PermissionType.READ, fileType = FileType.FILE)
 	@GetMapping("/download/{fileId}")
 	@Validated
-	ResponseEntity<InputStreamResource> download(@PathVariable Long fileId,
-		@Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
+	ResponseEntity<InputStreamResource> download(@CheckField(FieldType.FILE_ID) @PathVariable Long fileId,
+		@CheckField(FieldType.USER_ID) @Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
 
 		FileMetadata fileMetadata = fileService.getFileMetadataBy(fileId, userId);
 		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, bucketName, fileMetadata.getUuidFileName());

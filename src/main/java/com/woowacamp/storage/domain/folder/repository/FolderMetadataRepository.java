@@ -66,6 +66,13 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 		""")
 	void deleteOrphanFolders(@Param("parentFolderId") long parentFolderId);
 
+	@Lock(LockModeType.PESSIMISTIC_READ)
+	@Query(value = """
+			select f from FolderMetadata f
+			where f.id = :folderId
+		""")
+	Optional<FolderMetadata> findByIdForShare(@Param("folderId") Long folderId);
+
 	@Query(value = """
 						WITH RECURSIVE folder_hierarchy AS(
 						SELECT folder_metadata_id
