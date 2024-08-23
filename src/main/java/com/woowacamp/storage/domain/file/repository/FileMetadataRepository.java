@@ -82,4 +82,11 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 	void setMetadataStatusFail(@Param("fileId") long fileId, @Param("uploadStatus") UploadStatus uploadStatus);
 
 	boolean existsByParentFolderIdAndUploadStatus(Long parentFolderId, UploadStatus uploadStatus);
+
+	@Lock(LockModeType.PESSIMISTIC_READ)
+	@Query(value = """
+			select f from FileMetadata f
+			where f.id = :fileId
+		""")
+	Optional<FileMetadata> findByIdForShare(@Param("fileId") long fileId);
 }
