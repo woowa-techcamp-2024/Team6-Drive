@@ -13,6 +13,6 @@ public class CommonConstant {
 	public static final int SHARED_LINK_VALID_TIME = 3 * 60 * 60;
 	public static final LocalDateTime UNAVAILABLE_TIME = LocalDateTime.of(1970, 1, 1, 1, 0);
 	public static final String SHARED_LINK_URI = "/api/v1/share?sharedId=";
-	public static final String FOLDER_READ_URI_TEMPLATE = "/api/v1/folders/%d";
-	public static final String FILE_READ_URI_TEMPLATE = "/api/v1/files/%d";
+	public static final String FOLDER_READ_URI = "/api/v1/folders/";
+	public static final String FILE_READ_URI = "/api/v1/files/";
 }

@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataJpaRepository;
+import com.woowacamp.storage.domain.file.service.FileService;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
+import com.woowacamp.storage.domain.folder.service.FolderService;
 import com.woowacamp.storage.domain.shredlink.dto.request.CancelSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.request.MakeSharedLinkRequestDto;
 import com.woowacamp.storage.domain.shredlink.dto.response.SharedLinkResponseDto;
@@ -98,8 +100,8 @@ public class SharedLinkService {
 	}
 
 	private String createRedirectUrl(boolean isFile, long targetId) {
-		String template = isFile ? CommonConstant.FILE_READ_URI_TEMPLATE : CommonConstant.FOLDER_READ_URI_TEMPLATE;
-		return UrlUtil.getAbsoluteUrl(String.format(template, targetId));
+		String template = isFile ? CommonConstant.FILE_READ_URI : CommonConstant.FOLDER_READ_URI;
+		return UrlUtil.getAbsoluteUrl(template + targetId);
 	}
 
 	private String createSharedLinkUrl(String sharedId) {
