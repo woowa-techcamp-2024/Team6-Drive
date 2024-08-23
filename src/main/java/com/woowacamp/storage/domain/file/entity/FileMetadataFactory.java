@@ -8,25 +8,24 @@ import com.woowacamp.storage.global.constant.UploadStatus;
 
 public class FileMetadataFactory {
 
-	public static FileMetadata buildInitialMetadata(User user, FolderMetadata parentFolder, long fileSize,
-		String uuidFileName,
-		String fileName, String fileType) {
+	public static FileMetadata buildInitialMetadata(User user, long parentFolderId, long fileSize, String uuidFileName,
+		String fileName, String fileType, long creatorId, FolderMetadata parentFolderMetadata) {
 		LocalDateTime now = LocalDateTime.now();
 		return FileMetadata.builder()
 			.rootId(user.getRootFolderId())
-			.creatorId(user.getId())
-			.ownerId(parentFolder.getOwnerId())
-			.parentFolderId(parentFolder.getId())
+			.creatorId(creatorId)
+			.ownerId(user.getId())
+			.parentFolderId(parentFolderId)
 			.fileSize(fileSize)
 			.uuidFileName(uuidFileName)
 			.uploadStatus(UploadStatus.PENDING)
 			.uploadFileName(fileName)
 			.fileType(fileType)
+			.isShared(parentFolderMetadata.isShared())
+			.sharingExpiredAt(parentFolderMetadata.getSharingExpiredAt())
 			.createdAt(now)
 			.updatedAt(now)
-			.isShared(parentFolder.isShared())
-			.sharingExpiredAt(parentFolder.getSharingExpiredAt())
-			.permissionType(parentFolder.getPermissionType())
+			.permissionType(parentFolderMetadata.getPermissionType())
 			.build();
 	}
 }

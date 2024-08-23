@@ -25,8 +25,8 @@ public class FolderMetadataFactory {
 		LocalDateTime now = LocalDateTime.now();
 		return FolderMetadata.builder()
 			.rootId(user.getRootFolderId())
-			.ownerId(parentFolder.getOwnerId())
-			.creatorId(user.getId())
+			.ownerId(user.getId())
+			.creatorId(req.creatorId())
 			.createdAt(now)
 			.updatedAt(now)
 			.parentFolderId(req.parentFolderId())
