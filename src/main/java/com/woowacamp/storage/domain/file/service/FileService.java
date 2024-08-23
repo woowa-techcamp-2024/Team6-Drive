@@ -2,6 +2,7 @@ package com.woowacamp.storage.domain.file.service;
 
 import static com.woowacamp.storage.global.error.ErrorCode.*;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 
@@ -89,6 +90,17 @@ public class FileService {
 			amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUuidFileName());
 		} catch (AmazonS3Exception e) {
 			throw ErrorCode.FILE_DELETE_FAILED.baseException();
+		}
+
+		Long currentFolderId = fileMetadata.getParentFolderId();
+		long fileSize = fileMetadata.getFileSize();
+		LocalDateTime now = LocalDateTime.now();
+		while (currentFolderId != null) {
+			FolderMetadata currentFolderMetadata = folderMetadataRepository.findByIdForUpdate(currentFolderId)
+				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+			currentFolderMetadata.addSize(-fileSize);
+			currentFolderMetadata.updateUpdatedAt(now);
+			currentFolderId = currentFolderMetadata.getParentFolderId();
 		}
 	}
 
