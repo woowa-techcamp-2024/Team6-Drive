@@ -2,6 +2,9 @@ package com.woowacamp.storage.domain.file.entity;
 
 import java.time.LocalDateTime;
 
+import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.PermissionType;
+import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 
 import jakarta.persistence.Column;
@@ -81,6 +84,15 @@ public class FileMetadata {
 	@NotNull
 	private String thumbnailUUID;
 
+	@Column(name = "sharing_expired_at", columnDefinition = "TIMESTAMP NOT NULL")
+	@NotNull
+	private LocalDateTime sharingExpiredAt;
+
+	@Column(name = "permission_type", columnDefinition = "VARCHAR(10) NOT NULL")
+	@NotNull
+	@Enumerated(EnumType.STRING)
+	private PermissionType permissionType;
+
 	@Builder
 	public FileMetadata(
 		Long id,
@@ -95,8 +107,10 @@ public class FileMetadata {
 		String uploadFileName,
 		String uuidFileName,
 		UploadStatus uploadStatus,
-		String thumbnailUUID
-	) {
+		String thumbnailUUID,
+		LocalDateTime sharingExpiredAt,
+		PermissionType permissionType
+		) {
 		this.id = id;
 		this.rootId = rootId;
 		this.creatorId = creatorId;
@@ -110,6 +124,8 @@ public class FileMetadata {
 		this.uuidFileName = uuidFileName;
 		this.uploadStatus = uploadStatus;
 		this.thumbnailUUID = thumbnailUUID;
+		this.sharingExpiredAt = sharingExpiredAt;
+		this.permissionType = permissionType;
 	}
 
 	public void updateCreatedAt(LocalDateTime createdAt) {
@@ -130,5 +146,18 @@ public class FileMetadata {
 
 	public void updateParentFolderId(Long parentFolderId) {
 		this.parentFolderId = parentFolderId;
+	}
+
+	public void updateShareStatus(PermissionType permissionType, LocalDateTime sharingExpiredAt) {
+		if (permissionType == null || permissionType.equals(PermissionType.NONE)) {
+			throw new IllegalArgumentException("잘못된 공유 권한 수정 입니다.");
+		}
+		this.permissionType = permissionType;
+		this.sharingExpiredAt = sharingExpiredAt;
+	}
+
+	public void cancelShare() {
+		this.permissionType = PermissionType.NONE;
+		this.sharingExpiredAt = CommonConstant.UNAVAILABLE_TIME;
 	}
 }

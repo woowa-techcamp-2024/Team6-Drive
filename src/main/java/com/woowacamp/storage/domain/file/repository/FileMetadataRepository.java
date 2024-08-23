@@ -93,4 +93,11 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 			select * from file_metadata f where f.upload_status = 'FAIL' limit 50;
 		""", nativeQuery = true)
 	List<FileMetadata> findFailedFileMetadata();
+
+	@Lock(LockModeType.PESSIMISTIC_READ)
+	@Query(value = """
+			select f from FileMetadata f
+			where f.id = :fileId
+		""")
+	Optional<FileMetadata> findByIdForShare(@Param("fileId") long fileId);
 }

@@ -2,6 +2,8 @@ package com.woowacamp.storage.domain.shredlink.entity;
 
 import java.time.LocalDateTime;
 
+import com.woowacamp.storage.global.constant.PermissionType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,6 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
@@ -18,8 +21,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "shared_link", uniqueConstraints = {@UniqueConstraint(columnNames = {"shared_link_url"}),
-	@UniqueConstraint(columnNames = {"shared_token"})})
+@Table(name = "shared_link",
+	uniqueConstraints = {@UniqueConstraint(columnNames = {"shared_id"})},
+	indexes = {@Index(name = "target_index", columnList = "is_file,target_id")})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class SharedLink {
@@ -33,20 +37,18 @@ public class SharedLink {
 	@NotNull
 	private LocalDateTime createdAt;
 
-	// 공유하는 링크
-	@Column(name = "shared_link_url", columnDefinition = "VARCHAR(300) NOT NULL")
+	// 공유 링크로 접속시 리다이렉트할 url
+	@Column(name = "redirect_url", columnDefinition = "VARCHAR(300) NOT NULL")
 	@NotNull
-	private String sharedLinkUrl;
+	private String redirectUrl;
+
+	@Column(name = "shared_id", columnDefinition = "VARCHAR(100) NOT NULL")
+	private String sharedId;
 
 	// 공유하는 사용자의 pk
 	@Column(name = "shared_user_id", columnDefinition = "BIGINT NOT NULL")
 	@NotNull
 	private Long sharedUserId;
-
-	// 공유 받은 사용자를 인증할 토큰(쿠키)
-	@Column(name = "shared_token", columnDefinition = "VARCHAR(100) NOT NULL")
-	@NotNull
-	private String sharedToken;
 
 	@Column(name = "expired_at", columnDefinition = "TIMESTAMP NOT NULL")
 	@NotNull
@@ -66,16 +68,20 @@ public class SharedLink {
 	private PermissionType permissionType;
 
 	@Builder
-	public SharedLink(Long id, LocalDateTime createdAt, String sharedLinkUrl, Long sharedUserId, String sharedToken,
+	public SharedLink(Long id, LocalDateTime createdAt, String redirectUrl, String sharedId, Long sharedUserId,
 		LocalDateTime expiredAt, Boolean isFile, Long targetId, PermissionType permissionType) {
 		this.id = id;
 		this.createdAt = createdAt;
-		this.sharedLinkUrl = sharedLinkUrl;
+		this.redirectUrl = redirectUrl;
 		this.sharedUserId = sharedUserId;
-		this.sharedToken = sharedToken;
+		this.sharedId = sharedId;
 		this.expiredAt = expiredAt;
 		this.isFile = isFile;
 		this.targetId = targetId;
 		this.permissionType = permissionType;
+	}
+
+	public boolean isExpired() {
+		return LocalDateTime.now().isAfter(expiredAt);
 	}
 }

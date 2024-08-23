@@ -2,8 +2,13 @@ package com.woowacamp.storage.domain.folder.entity;
 
 import java.time.LocalDateTime;
 
+import com.woowacamp.storage.global.constant.CommonConstant;
+import com.woowacamp.storage.global.constant.PermissionType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -56,9 +61,19 @@ public class FolderMetadata {
 	@Column(name = "folder_size", columnDefinition = "BIGINT NOT NULL DEFAULT 0")
 	private long size;
 
+	@Column(name = "sharing_expired_at", columnDefinition = "TIMESTAMP NOT NULL")
+	@NotNull
+	private LocalDateTime sharingExpiredAt;
+
+	@Column(name = "permission_type", columnDefinition = "VARCHAR(10) NOT NULL")
+	@NotNull
+	@Enumerated(EnumType.STRING)
+	private PermissionType permissionType;
+
 	@Builder
-	private FolderMetadata(Long id, Long rootId, Long ownerId, Long creatorId, LocalDateTime createdAt,
-		LocalDateTime updatedAt, Long parentFolderId, String uploadFolderName) {
+	public FolderMetadata(Long id, Long rootId, Long ownerId, Long creatorId, LocalDateTime createdAt,
+		LocalDateTime updatedAt, Long parentFolderId, String uploadFolderName, long size,
+		LocalDateTime sharingExpiredAt, PermissionType permissionType) {
 		this.id = id;
 		this.rootId = rootId;
 		this.ownerId = ownerId;
@@ -67,6 +82,9 @@ public class FolderMetadata {
 		this.updatedAt = updatedAt;
 		this.parentFolderId = parentFolderId;
 		this.uploadFolderName = uploadFolderName;
+		this.size = size;
+		this.sharingExpiredAt = sharingExpiredAt;
+		this.permissionType = permissionType;
 	}
 
 	public void initOwnerId(Long ownerId) {
@@ -87,5 +105,18 @@ public class FolderMetadata {
 
 	public void updateParentFolderId(Long parentFolderId) {
 		this.parentFolderId = parentFolderId;
+	}
+
+	public void updateShareStatus(PermissionType permissionType, LocalDateTime sharingExpiredAt) {
+		if (permissionType == null || permissionType.equals(PermissionType.NONE)) {
+			throw new IllegalArgumentException("잘못된 공유 권한 수정 입니다.");
+		}
+		this.permissionType = permissionType;
+		this.sharingExpiredAt = sharingExpiredAt;
+	}
+
+	public void cancelShare() {
+		this.permissionType = PermissionType.NONE;
+		this.sharingExpiredAt = CommonConstant.UNAVAILABLE_TIME;
 	}
 }

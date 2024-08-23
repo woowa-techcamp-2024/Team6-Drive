@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
 	private static final String rootFolderName = "rootFolder";
 	private final UserRepository userRepository;
 	private final FolderMetadataRepository folderMetadataRepository;
@@ -38,7 +37,7 @@ public class UserService {
 	public UserDto save(CreateUserReqDto req) {
 		LocalDateTime now = LocalDateTime.now();
 
-		FolderMetadata rootFolder = folderMetadataRepository.save(createFolderMetadataBySignup(now, rootFolderName));
+		FolderMetadata rootFolder = folderMetadataRepository.save(createFolderMetadataBySignup(rootFolderName));
 
 		User user = userRepository.save(createUser(req.userName(), rootFolder));
 
