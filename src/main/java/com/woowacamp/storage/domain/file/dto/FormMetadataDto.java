@@ -13,6 +13,21 @@ public class FormMetadataDto {
 	private long userId;
 	private long parentFolderId;
 	private long fileSize;
+	private long creatorId;
+
+	public FormMetadataDto(long userId, long parentFolderId, long fileSize) {
+		this.userId = userId;
+		this.parentFolderId = parentFolderId;
+		this.fileSize = fileSize;
+	}
+
+	public void setUserId(long userId) {
+		this.userId = userId;
+	}
+
+	public void setCreatorId(long creatorId) {
+		this.creatorId = creatorId;
+	}
 
 	public static FormMetadataDto of(Map<String, String> formFields) {
 		try {
