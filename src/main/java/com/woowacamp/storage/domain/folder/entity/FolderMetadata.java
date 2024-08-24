@@ -121,6 +121,6 @@ public class FolderMetadata {
 	}
 
 	public boolean isSharingExpired() {
-		return permissionType != PermissionType.NONE && sharingExpiredAt.isBefore(LocalDateTime.now());
+		return sharingExpiredAt.isBefore(LocalDateTime.now());
 	}
 }
