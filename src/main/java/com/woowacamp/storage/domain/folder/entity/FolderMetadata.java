@@ -119,4 +119,8 @@ public class FolderMetadata {
 		this.permissionType = PermissionType.NONE;
 		this.sharingExpiredAt = CommonConstant.UNAVAILABLE_TIME;
 	}
+
+	public boolean isSharingExpired() {
+		return sharingExpiredAt.isBefore(LocalDateTime.now());
+	}
 }

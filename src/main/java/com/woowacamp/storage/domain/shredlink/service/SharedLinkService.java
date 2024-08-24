@@ -123,7 +123,7 @@ public class SharedLinkService {
 			updateFileShareStatus(sharedLink.getTargetId(), sharedLink.getPermissionType(),
 				sharedLink.getExpiredAt());
 		} else {
-			updateSubFolderShareStatus(sharedLink.getTargetId(),
+			updateFolderSharingStatus(sharedLink.getTargetId(),
 				sharedLink.getPermissionType(), sharedLink.getExpiredAt());
 		}
 	}
@@ -134,11 +134,10 @@ public class SharedLinkService {
 		fileMetadata.updateShareStatus(permissionType, sharingExpireAt);
 	}
 
-	public void updateSubFolderShareStatus(Long folderId, PermissionType permissionType,
+	public void updateFolderSharingStatus(Long folderId, PermissionType permissionType,
 		LocalDateTime sharingExpireAt) {
-		FolderMetadata folder = folderMetadataRepository.findById(folderId)
+		folderMetadataRepository.findById(folderId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
-		folder.cancelShare();
 
 		Stack<Long> folderIdStack = new Stack<>();
 		folderIdStack.push(folderId);
@@ -194,7 +193,6 @@ public class SharedLinkService {
 	public void cancelFolderShare(Long folderId) {
 		FolderMetadata folder = folderMetadataRepository.findById(folderId)
 			.orElseThrow(ErrorCode.FILE_NOT_FOUND::baseException);
-		folder.cancelShare();
 
 		Stack<Long> folderIdStack = new Stack<>();
 		folderIdStack.push(folderId);
