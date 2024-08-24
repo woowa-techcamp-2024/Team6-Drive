@@ -2,10 +2,12 @@ package com.woowacamp.storage.domain.file.service;
 
 import static com.woowacamp.storage.global.error.ErrorCode.*;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.woowacamp.storage.domain.file.dto.FileMoveDto;
 import com.woowacamp.storage.domain.file.entity.FileMetadata;
+import com.woowacamp.storage.domain.file.event.FileMoveEvent;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
@@ -31,6 +34,7 @@ public class FileService {
 	private final FolderMetadataRepository folderMetadataRepository;
 	private final FolderSearchUtil folderSearchUtil;
 	private final AmazonS3 amazonS3;
+	private final ApplicationEventPublisher eventPublisher;
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String BUCKET_NAME;
 
@@ -54,6 +58,8 @@ public class FileService {
 		FolderMetadata commonAncestor = folderSearchUtil.getCommonAncestor(sourcePath, targetPath);
 		folderSearchUtil.updateFolderPath(sourcePath, targetPath, commonAncestor, fileMetadata.getFileSize());
 		fileMetadata.updateParentFolderId(dto.targetFolderId());
+
+		eventPublisher.publishEvent(new FileMoveEvent(this, fileMetadata, folderMetadata));
 	}
 
 	private void validateMetadata(FileMoveDto dto, FileMetadata fileMetadata) {
@@ -89,6 +95,17 @@ public class FileService {
 			amazonS3.deleteObject(BUCKET_NAME, fileMetadata.getUuidFileName());
 		} catch (AmazonS3Exception e) {
 			throw ErrorCode.FILE_DELETE_FAILED.baseException();
+		}
+
+		Long currentFolderId = fileMetadata.getParentFolderId();
+		long fileSize = fileMetadata.getFileSize();
+		LocalDateTime now = LocalDateTime.now();
+		while (currentFolderId != null) {
+			FolderMetadata currentFolderMetadata = folderMetadataRepository.findByIdForUpdate(currentFolderId)
+				.orElseThrow(ErrorCode.FOLDER_NOT_FOUND::baseException);
+			currentFolderMetadata.addSize(-fileSize);
+			currentFolderMetadata.updateUpdatedAt(now);
+			currentFolderId = currentFolderMetadata.getParentFolderId();
 		}
 	}
 

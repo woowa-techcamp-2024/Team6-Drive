@@ -10,7 +10,7 @@ public class SharedLinkFactory {
 	public static SharedLink createSharedLink(MakeSharedLinkRequestDto requestDto, String sharedId,
 		String redirectUrl) {
 		LocalDateTime createTime = LocalDateTime.now();
-		LocalDateTime expiredTime = createTime.plusSeconds(CommonConstant.SHARED_LINK_VALID_TIME);
+		LocalDateTime expiredTime = createTime.plusHours(CommonConstant.SHARED_LINK_VALID_TIME);
 		return SharedLink.builder()
 			.createdAt(createTime)
 			.redirectUrl(redirectUrl)

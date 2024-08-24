@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -29,6 +30,7 @@ import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
 import com.woowacamp.storage.domain.folder.dto.request.FolderMoveDto;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
+import com.woowacamp.storage.domain.folder.event.FolderMoveEvent;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.domain.user.entity.User;
@@ -48,6 +50,7 @@ public class FolderService {
 	private final UserRepository userRepository;
 	private final FolderSearchUtil folderSearchUtil;
 	private final AmazonS3 amazonS3;
+	private final ApplicationEventPublisher eventPublisher;
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String BUCKET_NAME;
 
@@ -92,6 +95,9 @@ public class FolderService {
 		FolderMetadata commonAncestor = folderSearchUtil.getCommonAncestor(sourcePath, targetPath);
 		folderSearchUtil.updateFolderPath(sourcePath, targetPath, commonAncestor, folderMetadata.getSize());
 		folderMetadata.updateParentFolderId(dto.targetFolderId());
+
+		eventPublisher.publishEvent(
+			new FolderMoveEvent(this, folderMetadata, folderMetadataRepository.findById(dto.targetFolderId()).get()));
 	}
 
 	private void validateMoveFolder(Long sourceFolderId, FolderMoveDto dto, FolderMetadata folderMetadata) {
@@ -168,7 +174,7 @@ public class FolderService {
 		List<FileMetadata> files = fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy,
 			direction, limit, dateTime, size);
 		if (!ownerRequested) {
-			files = files.stream().filter(file -> !file.isSharingExpired()).collect(Collectors.toList());
+			files = files.stream().filter(file -> !file.isSharingExpired()).toList();
 		}
 		return files;
 	}
@@ -178,7 +184,7 @@ public class FolderService {
 		List<FolderMetadata> folders = folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId,
 			sortBy, direction, limit, dateTime, size);
 		if (!ownerRequested) {
-			folders = folders.stream().filter(folder -> !folder.isSharingExpired()).collect(Collectors.toList());
+			folders = folders.stream().filter(folder -> !folder.isSharingExpired()).toList();
 		}
 		return folders;
 	}

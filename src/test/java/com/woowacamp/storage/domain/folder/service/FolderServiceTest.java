@@ -105,20 +105,20 @@ class FolderServiceTest {
 			void orderByCreatedAt_asc() {
 				// When
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
-					10, FolderContentsSortField.CREATED_AT, Sort.Direction.ASC, now.minusDays(7), 0L);
+					10, FolderContentsSortField.CREATED_AT, Sort.Direction.ASC, now.minusDays(7), 0L, true);
 
 				// Then
 				assertEquals(7, result.fileMetadataList().size());
 				assertTrue(result.folderMetadataList().isEmpty());
 				for (int i = 0; i < result.fileMetadataList().size() - 1; i++) {
 					assertTrue(result.fileMetadataList()
-								   .get(i)
-								   .getCreatedAt()
-								   .isBefore(result.fileMetadataList().get(i + 1).getCreatedAt())
-							   || result.fileMetadataList()
-								   .get(i)
-								   .getCreatedAt()
-								   .equals(result.fileMetadataList().get(i + 1).getCreatedAt()));
+						.get(i)
+						.getCreatedAt()
+						.isBefore(result.fileMetadataList().get(i + 1).getCreatedAt())
+						|| result.fileMetadataList()
+						.get(i)
+						.getCreatedAt()
+						.equals(result.fileMetadataList().get(i + 1).getCreatedAt()));
 				}
 			}
 
@@ -127,7 +127,7 @@ class FolderServiceTest {
 			void orderBySize_desc() {
 				// When
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
-					10, FolderContentsSortField.DATA_SIZE, Sort.Direction.ASC, now, 0L);
+					10, FolderContentsSortField.DATA_SIZE, Sort.Direction.ASC, now, 0L, true);
 
 				// Then
 				assertEquals(7, result.fileMetadataList().size());
@@ -140,7 +140,7 @@ class FolderServiceTest {
 				// When
 				int limit = 5;
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FILE,
-					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L);
+					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L, true);
 
 				// Then
 				assertEquals(limit, result.fileMetadataList().size());
@@ -157,7 +157,7 @@ class FolderServiceTest {
 			void orderByCreatedAt_desc() {
 				// When
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FOLDER,
-					20, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L);
+					20, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L, true);
 
 				// Then
 				List<FolderMetadata> resultFolders = result.folderMetadataList();
@@ -166,11 +166,11 @@ class FolderServiceTest {
 				assertEquals(7, resultFiles.size());
 				for (int i = 0; i < resultFolders.size() - 1; i++) {
 					assertTrue(resultFolders.get(i).getCreatedAt().isAfter(resultFolders.get(i + 1).getCreatedAt())
-							   || resultFolders.get(i).getCreatedAt().equals(resultFolders.get(i + 1).getCreatedAt()));
+						|| resultFolders.get(i).getCreatedAt().equals(resultFolders.get(i + 1).getCreatedAt()));
 				}
 				for (int i = 0; i < resultFiles.size() - 1; i++) {
 					assertTrue(resultFiles.get(i).getCreatedAt().isAfter(resultFiles.get(i + 1).getCreatedAt())
-							   || resultFiles.get(i).getCreatedAt().equals(resultFiles.get(i + 1).getCreatedAt()));
+						|| resultFiles.get(i).getCreatedAt().equals(resultFiles.get(i + 1).getCreatedAt()));
 				}
 			}
 
@@ -179,7 +179,7 @@ class FolderServiceTest {
 			void orderBySize_asc() {
 				// When
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FOLDER,
-					20, FolderContentsSortField.DATA_SIZE, Sort.Direction.ASC, now, 0L);
+					20, FolderContentsSortField.DATA_SIZE, Sort.Direction.ASC, now, 0L, true);
 
 				// Then
 				List<FolderMetadata> resultFolders = result.folderMetadataList();
@@ -200,7 +200,7 @@ class FolderServiceTest {
 				// When
 				int limit = 10;
 				FolderContentsDto result = folderService.getFolderContents(parentFolder.getId(), 0L, CursorType.FOLDER,
-					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L);
+					limit, FolderContentsSortField.CREATED_AT, Sort.Direction.DESC, now, 0L, true);
 
 				// Then
 				assertEquals(limit, result.folderMetadataList().size() + result.fileMetadataList().size());
