@@ -21,5 +21,20 @@ spring:
       enabled: false
       resolve-lazily: true
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
 share:
   server-domain: localhost:8080
