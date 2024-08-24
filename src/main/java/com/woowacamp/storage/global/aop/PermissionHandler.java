@@ -160,9 +160,9 @@ public class PermissionHandler {
 			throw ErrorCode.ACCESS_DENIED.baseException();
 		}
 
-		// 읽기 권한만 있는 파일에 쓰기 작업을 시도하면 예외를 반환한다.
-		if (Objects.equals(permissionType, PermissionType.WRITE) && Objects.equals(sharedPermissionType,
-			PermissionType.READ)) {
+		// 소유주가 아닌데 읽기 권한만 있는 파일에 쓰기 작업을 시도하면 예외를 반환한다.
+		if (!Objects.equals(userId, ownerId) && Objects.equals(permissionType, PermissionType.WRITE) && Objects.equals(
+			sharedPermissionType, PermissionType.READ)) {
 			log.error(
 				"[PermissionType Exception] 읽기 권한이 있는 사용자가 쓰기 권한 요청하여 예외 발생.request user id = {}, file owner id = {}",
 				userId, ownerId);
