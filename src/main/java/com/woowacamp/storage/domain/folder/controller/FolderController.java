@@ -60,8 +60,8 @@ public class FolderController {
 	@PatchMapping("/{folderId}")
 	public void moveFolder(@PathVariable("folderId") @CheckField(value = FieldType.FOLDER_ID) Long sourceFolderId,
 		@CheckDto @RequestBody FolderMoveDto dto) {
-		folderService.checkFolderOwnedBy(sourceFolderId, dto.userId());
-		folderService.checkFolderOwnedBy(dto.targetFolderId(), dto.userId());
+		// folderService.checkFolderOwnedBy(sourceFolderId, dto.userId());
+		// folderService.checkFolderOwnedBy(dto.targetFolderId(), dto.userId());
 		folderService.moveFolder(sourceFolderId, dto);
 	}
 
