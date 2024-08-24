@@ -63,17 +63,18 @@ public class FolderService {
 
 	@Transactional(readOnly = true)
 	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, CursorType cursorType, int limit,
-		FolderContentsSortField sortBy, Sort.Direction sortDirection, LocalDateTime dateTime, Long size) {
+		FolderContentsSortField sortBy, Sort.Direction sortDirection, LocalDateTime dateTime, Long size,
+		boolean ownerRequested) {
 		List<FolderMetadata> folders = new ArrayList<>();
 		List<FileMetadata> files = new ArrayList<>();
 
 		if (cursorType.equals(CursorType.FILE)) {
-			files = fetchFiles(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size);
+			files = fetchFiles(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size, ownerRequested);
 		} else if (cursorType.equals(CursorType.FOLDER)) {
-			folders = fetchFolders(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size);
+			folders = fetchFolders(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size, ownerRequested);
 			if (folders.size() < limit) {
 				files = fetchFiles(folderId, INITIAL_CURSOR_ID, limit - folders.size(), sortBy, sortDirection, dateTime,
-					size);
+					size, ownerRequested);
 			}
 		}
 
@@ -163,15 +164,23 @@ public class FolderService {
 	}
 
 	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int limit, FolderContentsSortField sortBy,
-		Sort.Direction direction, LocalDateTime dateTime, Long size) {
-		return fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy, direction, limit, dateTime,
-			size);
+		Sort.Direction direction, LocalDateTime dateTime, Long size, boolean ownerRequested) {
+		List<FileMetadata> files = fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy,
+			direction, limit, dateTime, size);
+		if (!ownerRequested) {
+			files = files.stream().filter(file -> !file.isSharingExpired()).collect(Collectors.toList());
+		}
+		return files;
 	}
 
 	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int limit, FolderContentsSortField sortBy,
-		Sort.Direction direction, LocalDateTime dateTime, Long size) {
-		return folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId, sortBy, direction, limit,
-			dateTime, size);
+		Sort.Direction direction, LocalDateTime dateTime, Long size, boolean ownerRequested) {
+		List<FolderMetadata> folders = folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId,
+			sortBy, direction, limit, dateTime, size);
+		if (!ownerRequested) {
+			folders = folders.stream().filter(folder -> !folder.isSharingExpired()).collect(Collectors.toList());
+		}
+		return folders;
 	}
 
 	/**

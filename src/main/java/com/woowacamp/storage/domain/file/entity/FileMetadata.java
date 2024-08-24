@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import com.woowacamp.storage.global.constant.CommonConstant;
 import com.woowacamp.storage.global.constant.PermissionType;
-import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.constant.UploadStatus;
 
 import jakarta.persistence.Column;
@@ -110,7 +109,7 @@ public class FileMetadata {
 		String thumbnailUUID,
 		LocalDateTime sharingExpiredAt,
 		PermissionType permissionType
-		) {
+	) {
 		this.id = id;
 		this.rootId = rootId;
 		this.creatorId = creatorId;
@@ -159,5 +158,9 @@ public class FileMetadata {
 	public void cancelShare() {
 		this.permissionType = PermissionType.NONE;
 		this.sharingExpiredAt = CommonConstant.UNAVAILABLE_TIME;
+	}
+
+	public boolean isSharingExpired() {
+		return sharingExpiredAt.isBefore(LocalDateTime.now());
 	}
 }

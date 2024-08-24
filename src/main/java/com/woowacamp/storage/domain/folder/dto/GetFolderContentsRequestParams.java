@@ -15,7 +15,8 @@ import jakarta.validation.constraints.Positive;
 public record GetFolderContentsRequestParams(@NotNull @Positive @CheckField(value = FieldType.USER_ID) Long userId,
 											 @NotNull @Positive Long cursorId, @NotNull CursorType cursorType,
 											 @Positive @Max(MAX_SIZE) Integer limit, FolderContentsSortField sortBy,
-											 Sort.Direction sortDirection, LocalDateTime localDateTime, Long size) {
+											 Sort.Direction sortDirection, LocalDateTime localDateTime, Long size,
+											 @CheckField(FieldType.CREATOR_ID) Long creatorId) {
 	private static final int MAX_SIZE = 1000;
 	private static final int DEFAULT_SIZE = 100;
 
