@@ -39,7 +39,7 @@ public class SharedLinkController {
 
 	@GetMapping
 	@ResponseStatus(HttpStatus.FOUND)
-	public void getTokenFromShareLink(@NotNull @Positive @RequestParam Long userId,
+	public void redirectSharedLinkRequest(@NotNull @Positive @RequestParam Long userId,
 		@NotBlank @RequestParam String sharedId, HttpServletResponse response) throws
 		IOException {
 		response.sendRedirect(sharedLinkService.getRedirectUrl(sharedId) + "?userId =" + userId);

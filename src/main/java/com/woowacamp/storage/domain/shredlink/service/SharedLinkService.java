@@ -173,7 +173,7 @@ public class SharedLinkService {
 			sharingExpireAt);
 	}
 
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public void cancelShare(CancelSharedLinkRequestDto requestDto) {
 		validateRequest(requestDto.userId(), requestDto.isFile(), requestDto.targetId());
 		cancelShare(requestDto.isFile(), requestDto.targetId());
