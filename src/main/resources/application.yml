@@ -39,6 +39,13 @@ management:
       export:
         enabled: true
 
+server:
+  tomcat:
+    threads:
+      min-spare: 10
+      max: 50
+    accept-count: 100
+
 share:
   server-domain: localhost:8080
 
