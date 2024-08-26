@@ -2,6 +2,8 @@ package com.woowacamp.storage.domain.file.controller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 import org.apache.catalina.connector.ClientAbortException;
@@ -172,8 +174,7 @@ public class MultipartFileController {
 					permissionFieldsDto.setUserId(userId);
 					permissionFieldsDto.setFolderId(parentFolderId);
 					// 파일 쓰기는 현재 파일이 존재하지 않으므로 폴더에 대한 권한을 검증하고 통과하면 ownerId를 받아온다.
-					long ownerId = permissionHandler.getOwnerIdAndCheckPermission(
-						PermissionType.WRITE, FileType.FOLDER,
+					long ownerId = permissionHandler.getOwnerIdAndCheckPermission(PermissionType.WRITE, FileType.FOLDER,
 						permissionFieldsDto);
 					formMetadataDto.setUserId(ownerId);
 					formMetadataDto.setCreatorId(userId);
@@ -365,19 +366,29 @@ public class MultipartFileController {
 	@GetMapping("/download/{fileId}")
 	@Validated
 	ResponseEntity<InputStreamResource> download(@CheckField(FieldType.FILE_ID) @PathVariable Long fileId,
-		@CheckField(FieldType.USER_ID) @Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId) {
+		@CheckField(FieldType.USER_ID) @Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId,
+		@RequestParam("isThumbnail") boolean isThumbnail) {
 
 		FileMetadata fileMetadata = fileService.getFileMetadataBy(fileId, userId);
-		FileDataDto fileDataDto = s3FileService.downloadByS3(fileId, bucketName, fileMetadata.getUuidFileName());
+		FileDataDto fileDataDto;
+		if (isThumbnail) {
+			fileDataDto = s3FileService.downloadByS3(fileId, bucketName, fileMetadata.getThumbnailUUID());
+		} else {
+			fileDataDto = s3FileService.downloadByS3(fileId, bucketName, fileMetadata.getUuidFileName());
+		}
 		HttpHeaders headers = new HttpHeaders();
 		// HTTP 응답 헤더에 Content-Type 설정
 		String fileType = fileMetadata.getFileType();
 		if (fileType == null) {
 			fileType = "application/octet-stream";
 		}
+		String fileName = fileDataDto.fileMetadataDto().uploadFileName();
+		String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+
 		headers.add(HttpHeaders.CONTENT_TYPE, fileType);
 		headers.add(HttpHeaders.CONTENT_DISPOSITION,
-			"attachment; filename=" + fileDataDto.fileMetadataDto().uploadFileName());
+			"attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
+
 
 		return ResponseEntity.ok()
 			.headers(headers)
