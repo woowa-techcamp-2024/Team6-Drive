@@ -1,5 +1,7 @@
 package com.woowacamp.storage.domain.folder.controller;
 
+import java.util.Objects;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,7 +55,8 @@ public class FolderController {
 		folderService.checkFolderOwnedBy(folderId, request.userId());
 
 		return folderService.getFolderContents(folderId, request.cursorId(), request.cursorType(), request.limit(),
-			request.sortBy(), request.sortDirection(), request.localDateTime(), request.size());
+			request.sortBy(), request.sortDirection(), request.localDateTime(), request.size(),
+			Objects.equals(request.userId(), request.creatorId()));
 	}
 
 	@RequestType(permission = PermissionType.WRITE, fileType = FileType.FOLDER)

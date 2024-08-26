@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -29,6 +30,7 @@ import com.woowacamp.storage.domain.folder.dto.FolderContentsSortField;
 import com.woowacamp.storage.domain.folder.dto.request.CreateFolderReqDto;
 import com.woowacamp.storage.domain.folder.dto.request.FolderMoveDto;
 import com.woowacamp.storage.domain.folder.entity.FolderMetadata;
+import com.woowacamp.storage.domain.folder.event.FolderMoveEvent;
 import com.woowacamp.storage.domain.folder.repository.FolderMetadataRepository;
 import com.woowacamp.storage.domain.folder.utils.FolderSearchUtil;
 import com.woowacamp.storage.domain.user.entity.User;
@@ -48,6 +50,7 @@ public class FolderService {
 	private final UserRepository userRepository;
 	private final FolderSearchUtil folderSearchUtil;
 	private final AmazonS3 amazonS3;
+	private final ApplicationEventPublisher eventPublisher;
 	@Value("${cloud.aws.credentials.bucketName}")
 	private String BUCKET_NAME;
 
@@ -63,17 +66,18 @@ public class FolderService {
 
 	@Transactional(readOnly = true)
 	public FolderContentsDto getFolderContents(Long folderId, Long cursorId, CursorType cursorType, int limit,
-		FolderContentsSortField sortBy, Sort.Direction sortDirection, LocalDateTime dateTime, Long size) {
+		FolderContentsSortField sortBy, Sort.Direction sortDirection, LocalDateTime dateTime, Long size,
+		boolean ownerRequested) {
 		List<FolderMetadata> folders = new ArrayList<>();
 		List<FileMetadata> files = new ArrayList<>();
 
 		if (cursorType.equals(CursorType.FILE)) {
-			files = fetchFiles(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size);
+			files = fetchFiles(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size, ownerRequested);
 		} else if (cursorType.equals(CursorType.FOLDER)) {
-			folders = fetchFolders(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size);
+			folders = fetchFolders(folderId, cursorId, limit, sortBy, sortDirection, dateTime, size, ownerRequested);
 			if (folders.size() < limit) {
 				files = fetchFiles(folderId, INITIAL_CURSOR_ID, limit - folders.size(), sortBy, sortDirection, dateTime,
-					size);
+					size, ownerRequested);
 			}
 		}
 
@@ -91,6 +95,9 @@ public class FolderService {
 		FolderMetadata commonAncestor = folderSearchUtil.getCommonAncestor(sourcePath, targetPath);
 		folderSearchUtil.updateFolderPath(sourcePath, targetPath, commonAncestor, folderMetadata.getSize());
 		folderMetadata.updateParentFolderId(dto.targetFolderId());
+
+		eventPublisher.publishEvent(
+			new FolderMoveEvent(this, folderMetadata, folderMetadataRepository.findById(dto.targetFolderId()).get()));
 	}
 
 	private void validateMoveFolder(Long sourceFolderId, FolderMoveDto dto, FolderMetadata folderMetadata) {
@@ -163,15 +170,23 @@ public class FolderService {
 	}
 
 	private List<FileMetadata> fetchFiles(Long folderId, Long cursorId, int limit, FolderContentsSortField sortBy,
-		Sort.Direction direction, LocalDateTime dateTime, Long size) {
-		return fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy, direction, limit, dateTime,
-			size);
+		Sort.Direction direction, LocalDateTime dateTime, Long size, boolean ownerRequested) {
+		List<FileMetadata> files = fileMetadataRepository.selectFilesWithPagination(folderId, cursorId, sortBy,
+			direction, limit, dateTime, size);
+		if (!ownerRequested) {
+			files = files.stream().filter(file -> !file.isSharingExpired()).toList();
+		}
+		return files;
 	}
 
 	private List<FolderMetadata> fetchFolders(Long folderId, Long cursorId, int limit, FolderContentsSortField sortBy,
-		Sort.Direction direction, LocalDateTime dateTime, Long size) {
-		return folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId, sortBy, direction, limit,
-			dateTime, size);
+		Sort.Direction direction, LocalDateTime dateTime, Long size, boolean ownerRequested) {
+		List<FolderMetadata> folders = folderMetadataRepository.selectFoldersWithPagination(folderId, cursorId,
+			sortBy, direction, limit, dateTime, size);
+		if (!ownerRequested) {
+			folders = folders.stream().filter(folder -> !folder.isSharingExpired()).toList();
+		}
+		return folders;
 	}
 
 	/**
