@@ -72,4 +72,6 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 			where f.id = :folderId
 		""")
 	Optional<FolderMetadata> findByIdForShare(@Param("folderId") Long folderId);
+
+	List<FolderMetadata> findByOwnerId(Long ownerId);
 }

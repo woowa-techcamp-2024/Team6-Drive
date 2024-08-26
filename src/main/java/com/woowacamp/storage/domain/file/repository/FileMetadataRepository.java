@@ -100,4 +100,6 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 			where f.id = :fileId
 		""")
 	Optional<FileMetadata> findByIdForShare(@Param("fileId") long fileId);
+
+	List<FileMetadata> findByOwnerId(Long ownerId);
 }
