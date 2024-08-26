@@ -65,7 +65,8 @@ public class FileWriterThreadPool {
 			throw ErrorCode.FILE_UPLOAD_FAILED.baseException();
 		}
 		executorService.execute(() -> {
-			log.info("currentThread: {}, partNumber: {}", Thread.currentThread().getId(), partNumber);
+			log.info("currentThread: {}, partNumber: {}, qSize: {}", Thread.currentThread().getId(), partNumber,
+				((ThreadPoolExecutor)executorService).getQueue().size());
 			uploadPart(initResponse.getUploadId(), currentFileName, partNumber, contentBuffer, bufferLength, partETags);
 			AtomicInteger currentConsumeCount = currentPartCountMap.get(currentFileName);
 			if (currentConsumeCount != null) {
