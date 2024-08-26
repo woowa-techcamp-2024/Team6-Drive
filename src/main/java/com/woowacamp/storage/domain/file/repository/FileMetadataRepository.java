@@ -67,8 +67,8 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 
 	@Modifying
 	@Query(value = """
-			select f from FileMetadata f
-			where f.parentFolderId = :orphanParentId limit 50
+			select * from file_metadata f
+			where f.parent_folder_id = :orphanParentId limit 50;
 		""", nativeQuery = true)
 	List<FileMetadata> findOrphanFiles(@Param("orphanParentId") int orphanParentId);
 
