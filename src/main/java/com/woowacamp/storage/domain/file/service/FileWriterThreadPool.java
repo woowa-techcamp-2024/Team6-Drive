@@ -65,7 +65,7 @@ public class FileWriterThreadPool {
 			throw ErrorCode.FILE_UPLOAD_FAILED.baseException();
 		}
 		executorService.execute(() -> {
-			log.info("partNumber: {}", partNumber);
+			log.info("currentThread: {}, partNumber: {}", Thread.currentThread().getId(), partNumber);
 			uploadPart(initResponse.getUploadId(), currentFileName, partNumber, contentBuffer, bufferLength, partETags);
 			AtomicInteger currentConsumeCount = currentPartCountMap.get(currentFileName);
 			if (currentConsumeCount != null) {
@@ -105,6 +105,7 @@ public class FileWriterThreadPool {
 	}
 
 	private void completeFileUpload(String uploadId, String currentFileName, List<PartETag> partETags) {
+		log.info("currentThread: {}, finish upload", Thread.currentThread().getId());
 		maxPartCountMap.remove(currentFileName);
 		currentPartCountMap.remove(currentFileName);
 		CompleteMultipartUploadRequest completeRequest = new CompleteMultipartUploadRequest(BUCKET_NAME,

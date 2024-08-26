@@ -84,6 +84,13 @@ public class MultipartFileController {
 	@ResponseStatus(HttpStatus.CREATED)
 	@PostMapping
 	public void handleFileUpload(HttpServletRequest request) throws Exception {
+		Runtime runtime = Runtime.getRuntime();
+		long totalMemory = runtime.totalMemory();
+		long freeMemory = runtime.freeMemory();
+		long maxMemory = runtime.maxMemory();
+		long usedMemory = totalMemory - freeMemory;
+		log.info("new request, used mem: {}, free mem: {}, total mem: {}, max mem: {}", usedMemory, freeMemory,
+			totalMemory, maxMemory);
 		String boundary = "--" + extractBoundary(request.getContentType());
 		String finalBoundary = boundary + "--";
 
