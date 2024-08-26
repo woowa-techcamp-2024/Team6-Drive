@@ -93,22 +93,14 @@ public class MultipartFileController {
 		}
 	}
 
-	static class CustomOutputStream extends ByteArrayOutputStream {
-		@Override
-		public synchronized void reset() {
-			super.reset();
-			buf = new byte[32];
-		}
-	}
-
 	/**
 	 * 클라이언트 요청을 buffer 단위로 읽어서 processBuffer 메소드를 호출합니다.
 	 * processBuffer 메소드에서 헤더 파싱을 하고 boundary 체크를 하여 각 파트를 구분합니다.
 	 */
 	private void processMultipartData(InputStream inputStream, UploadContext context) throws Exception {
 		byte[] buffer = new byte[bufferSize];
-		ByteArrayOutputStream lineBuffer = new CustomOutputStream();
-		ByteArrayOutputStream contentBuffer = new CustomOutputStream();
+		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream();
+		ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream();
 		PartContext partContext = new PartContext();
 		UploadState state = new UploadState();
 
