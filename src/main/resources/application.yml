@@ -43,7 +43,7 @@ server:
   tomcat:
     threads:
       min-spare: 10
-      max: 50
+      max: 10
     accept-count: 100
 
 share:
