@@ -10,12 +10,12 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: true
+      ddl-auto: none
+    #    properties:
+    #      hibernate:
+    #        format_sql: true
     open-in-view: false
-    show-sql: true
+  #    show-sql: true
   servlet:
     multipart:
       enabled: false
@@ -38,3 +38,7 @@ management:
 
 share:
   server-domain: localhost:8080
+
+logging:
+  level:
+    root: WARN
