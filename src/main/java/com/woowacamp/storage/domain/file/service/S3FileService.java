@@ -60,7 +60,10 @@ public class S3FileService {
 		FolderMetadata parentFolderMetadata = validateRequest(formMetadataDto, partContext, user, fileName, fileType);
 
 		String uuidFileName = getUuidFileName();
-		String uuidThumbnail = "thumb_" + uuidFileName;
+		String uuidThumbnail = null;
+		if (partContext.getCurrentContentType().startsWith("image/")) {
+			uuidThumbnail = "thumb_" + uuidFileName;
+		}
 
 		// 1차 메타데이터 생성
 		// TODO: 공유 기능이 생길 때, creatorId, ownerId 따로
