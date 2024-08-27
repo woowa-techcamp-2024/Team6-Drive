@@ -536,10 +536,6 @@
         loadTree(userId);
     });
 
-    document.querySelector('.close').onclick = function () {
-        document.getElementById('thumbnailModal').style.display = 'none';
-    }
-
     window.onclick = function (event) {
         const modal = document.getElementById('thumbnailModal');
         if (event.target == modal) {
@@ -553,6 +549,16 @@
             loadTree(userId);
         }
     }
+
+    document.querySelectorAll('.close').forEach(function(closeButton) {
+        closeButton.onclick = function() {
+            const modal = this.closest('.thumbnail-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        };
+    });
+
 </script>
 </body>
 </html>
