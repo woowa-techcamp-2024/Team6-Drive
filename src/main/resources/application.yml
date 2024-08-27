@@ -43,8 +43,9 @@ server:
   tomcat:
     threads:
       min-spare: 10
-      max: 40
+      max: 20
     accept-count: 100
+    max-connections: 20
 
 share:
   server-domain: localhost:8080

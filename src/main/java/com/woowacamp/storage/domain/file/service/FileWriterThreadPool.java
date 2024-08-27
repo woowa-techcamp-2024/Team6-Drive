@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,8 +37,9 @@ public class FileWriterThreadPool {
 	private final Map<String, Integer> maxPartCountMap;
 	private final Map<String, AtomicInteger> currentPartCountMap;
 	private final AmazonS3 amazonS3;
-	private final ExecutorService executorService;
+	private final ThreadPoolExecutor executorService;
 	private final FileMetadataRepository fileMetadataRepository;
+	public final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(FILE_WRITER_QUEUE_SIZE);
 
 	public FileWriterThreadPool(AmazonS3 amazonS3, FileMetadataRepository fileMetadataRepository) {
 		this.amazonS3 = amazonS3;
@@ -50,10 +50,14 @@ public class FileWriterThreadPool {
 			FILE_WRITER_MAXIMUM_POOL_SIZE,
 			FILE_WRITER_KEEP_ALIVE_TIME,
 			TimeUnit.SECONDS,
-			new ArrayBlockingQueue<>(FILE_WRITER_QUEUE_SIZE),
+			workQueue,
 			new CustomS3BlockingQueuePolicy()
 		);
+		this.executorService.prestartAllCoreThreads();
 		this.fileMetadataRepository = fileMetadataRepository;
+		log.info("file writer queue size: {}", FILE_WRITER_QUEUE_SIZE);
+		// log.info("initial thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
+		// log.info("initial queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
 	}
 
 	public void produce(InitiateMultipartUploadResult initResponse, String currentFileName, int partNumber,
@@ -64,11 +68,13 @@ public class FileWriterThreadPool {
 			fileMetadataRepository.deleteByUuidFileName(currentFileName);
 			throw ErrorCode.FILE_UPLOAD_FAILED.baseException();
 		}
-		log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
-		log.info("current queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
+		// log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
+		// log.info("current queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
 		executorService.execute(() -> {
 			log.info("current file: {}, currentThread: {}, partNumber: {}", currentFileName,
 				Thread.currentThread().getId(), partNumber);
+			log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
+			log.info("current queue size: {}", workQueue.size());
 			uploadPart(initResponse.getUploadId(), currentFileName, partNumber, contentBuffer, bufferLength, partETags);
 			AtomicInteger currentConsumeCount = currentPartCountMap.get(currentFileName);
 			if (currentConsumeCount != null) {
