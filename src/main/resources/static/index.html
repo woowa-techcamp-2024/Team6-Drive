@@ -160,6 +160,7 @@
 </form>
 
 <ul id="tree" class="tree"></ul>
+<button onClick="openMoveForm()"> 폴더/파일 이동</button>
 
 <div id="thumbnailModal" class="thumbnail-modal">
     <div class="thumbnail-content">
@@ -182,6 +183,26 @@
                 <option value="none">공유 취소</option>
             </select>
             <button type="submit">공유 하기</button>
+        </form>
+    </div>
+</div>
+
+<div id="moveModal" class="thumbnail-modal">
+    <div class="thumbnail-content">
+        <span class="close">&times;</span>
+        <h3>파일/폴더 공유 설정</h3>
+        <form id="moveForm" onsubmit="moveFileFolder()">
+            <label for="sourceId"> 이동할 폴더/파일 id</label>
+            <input id="sourceId"></br>
+            <label for="requestUserId"> 유저 id</label>
+            <input id="requestUserId"></br>
+            <label for="targetFolderId"> 목적지 파일 id</label>
+            <input id="targetFolderId"></br>
+            <select id="isTargetFile">
+                <option value="true">파일</option>
+                <option value="false">폴더</option>
+            </select>
+            <button type="submit">이동 하기</button>
         </form>
     </div>
 </div>
@@ -289,6 +310,7 @@
         shareFileBtn.classList.add('share-btn');
         shareFileBtn.addEventListener('click', () => openShareForm(node.id, node.isFolder));
         li.appendChild(shareFileBtn);
+
         return li;
     }
 
@@ -298,6 +320,9 @@
         document.getElementById('shareModal').style.display = 'block';
     }
 
+    function openMoveForm() {
+        document.getElementById('moveModal').style.display = 'block';
+    }
 
     function createUploadForm(folderId) {
         const form = document.createElement('form');
@@ -397,6 +422,36 @@
         }
 
         fetch('/api/v1/share', {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+            });
+    }
+
+    function moveFileFolder() {
+        const sourceId = document.getElementById('sourceId').value;
+        const requestUserId = document.getElementById('requestUserId').value;
+        const targetFolderId = document.getElementById('targetFolderId').value;
+        const isTargetFile = document.getElementById('isTargetFile').value;
+
+        let method = 'PATCH';
+        let requestData = {
+            userId: parseInt(requestUserId),
+            targetFolderId: parseInt(targetFolderId),
+        };
+        let url = '/api/v1/folders'
+
+        if (isTargetFile === 'true') {
+            url = `/api/v1/files/${sourceId}`
+        } else {
+            url = `/api/v1/folders/${sourceId}`
+        }
+
+        fetch(url, {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
