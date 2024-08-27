@@ -36,17 +36,16 @@
             margin-bottom: 5px;
         }
 
-        .folder > span::before {
-            content: "📁 ";
-        }
+        /*.folder > span::before {*/
+        /*    content: "📁 ";*/
+        /*}*/
 
-        .file::before {
-            content: "📄 ";
-        }
-
-        .folder.open > span::before {
-            content: "📂 ";
-        }
+        /*.file::before {*/
+        /*    content: "📄 ";*/
+        /*}*/
+        /*.folder.open > span::before {*/
+        /*    content: "📂 ";*/
+        /*}*/
 
         .folder > ul {
             display: none;
@@ -251,12 +250,22 @@
 
     function renderTree(node) {
         const li = document.createElement('li');
-        li.innerHTML = `
-            <span class="item-name">${node.name}</span>
+        if (node.isFolder) {
+            li.innerHTML = `
+            <span class="item-name">📁 ${node.name}</span>
             <span class="item-size">(${formatSize(node.size)})</span>
             <span class="item-id">[ID: ${node.id}]</span>
             <span class="item-share">[${node.share}]</span>
         `;
+        } else {
+            li.innerHTML = `
+            <span class="item-name">📄 ${node.name}</span>
+            <span class="item-size">(${formatSize(node.size)})</span>
+            <span class="item-id">[ID: ${node.id}]</span>
+            <span class="item-share">[${node.share}]</span>
+        `;
+        }
+
 
         if (node.isFolder) {
             li.classList.add('folder');
@@ -550,8 +559,8 @@
         }
     }
 
-    document.querySelectorAll('.close').forEach(function(closeButton) {
-        closeButton.onclick = function() {
+    document.querySelectorAll('.close').forEach(function (closeButton) {
+        closeButton.onclick = function () {
             const modal = this.closest('.thumbnail-modal');
             if (modal) {
                 modal.style.display = 'none';
