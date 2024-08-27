@@ -168,6 +168,25 @@
     </div>
 </div>
 
+<div id="shareModal" class="thumbnail-modal">
+    <div class="thumbnail-content">
+        <span class="close">&times;</span>
+        <h3>파일/폴더 공유 설정</h3>
+        <form id="shareForm" onsubmit="shareFileFolder()">
+            <input type="hidden" id="targetId" name="targetId">
+            <input type="hidden" id="isFile" name="isFile">
+            <label for="permission">권한 선택:</label>
+            <select id="permission" name="permission">
+                <option value="read">Read</option>
+                <option value="write">Write</option>
+                <option value="none">공유 취소</option>
+            </select>
+            <button type="submit">공유 하기</button>
+        </form>
+    </div>
+</div>
+
+
 <script>
     function createTree(data) {
         const tree = {};
@@ -179,6 +198,7 @@
                 name: folder.uploadFolderName,
                 size: folder.size,
                 isFolder: true,
+                share: folder.sharingExpired ? '공유 X' : folder.permissionType,
                 children: {
                     folders: [],
                     files: []
@@ -193,7 +213,8 @@
                     name: file.uploadFileName,
                     size: file.fileSize,
                     isFolder: false,
-                    thumbnailUUID: file.thumbnailUUID
+                    thumbnailUUID: file.thumbnailUUID,
+                    share: file.sharingExpired ? '공유 X' : file.permissionType,
                 });
             }
         });
@@ -213,6 +234,7 @@
             <span class="item-name">${node.name}</span>
             <span class="item-size">(${formatSize(node.size)})</span>
             <span class="item-id">[ID: ${node.id}]</span>
+            <span class="item-share">[${node.share}]</span>
         `;
 
         if (node.isFolder) {
@@ -262,9 +284,20 @@
             deleteFileBtn.addEventListener('click', () => deleteFile(node.id));
             li.appendChild(deleteFileBtn);
         }
-
+        const shareFileBtn = document.createElement('button');
+        shareFileBtn.textContent = '공유';
+        shareFileBtn.classList.add('share-btn');
+        shareFileBtn.addEventListener('click', () => openShareForm(node.id, node.isFolder));
+        li.appendChild(shareFileBtn);
         return li;
     }
+
+    function openShareForm(targetId, isFile) {
+        document.getElementById('targetId').value = targetId;
+        document.getElementById('isFile').value = isFile;
+        document.getElementById('shareModal').style.display = 'block';
+    }
+
 
     function createUploadForm(folderId) {
         const form = document.createElement('form');
@@ -342,6 +375,36 @@
         const url = `/api/v1/files/download/${fileId}?userId=${userId}&isThumbnail=false`;
 
         window.open(url, '_blank');
+    }
+
+    function shareFileFolder() {
+        const userId = document.getElementById('userId').value;
+        const targetId = document.getElementById('targetId').value;
+        const isFile = !document.getElementById('isFile').value;
+        const permission = document.getElementById('permission').value;
+
+        let method = 'POST';
+        let requestData = {
+            userId: parseInt(userId),
+            isFile: isFile,
+            targetId: parseInt(targetId),
+        };
+
+        if (permission === 'none') {
+            method = 'DELETE';
+        } else {
+            requestData.permissionType = permission;
+        }
+
+        fetch('/api/v1/share', {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+            });
     }
 
     function deleteFile(fileId) {

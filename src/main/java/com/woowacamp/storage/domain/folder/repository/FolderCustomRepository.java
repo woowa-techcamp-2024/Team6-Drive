@@ -14,5 +14,5 @@ public interface FolderCustomRepository {
 		FolderContentsSortField sortBy, Sort.Direction direction, int limit, LocalDateTime dateTime, Long size);
 
 	void updateShareStatusInBatch(List<Long> folderIdsToUpdate, PermissionType permissionType,
-		LocalDateTime unavailableTime);
+		LocalDateTime sharingExpiredAt);
 }

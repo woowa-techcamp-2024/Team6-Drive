@@ -76,10 +76,10 @@ public class FolderCustomRepositoryImpl implements FolderCustomRepository {
 
 	@Override
 	public void updateShareStatusInBatch(List<Long> folderIdsToUpdate, PermissionType permissionType,
-		LocalDateTime sharingExpireAt) {
+		LocalDateTime sharingExpiredAt) {
 		queryFactory.update(folderMetadata)
 			.set(folderMetadata.permissionType, permissionType)
-			.set(folderMetadata.sharingExpiredAt, sharingExpireAt)
+			.set(folderMetadata.sharingExpiredAt, sharingExpiredAt)
 			.where(folderMetadata.id.in(folderIdsToUpdate))
 			.execute();
 	}
