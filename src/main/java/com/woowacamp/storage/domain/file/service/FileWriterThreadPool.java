@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,7 +37,7 @@ public class FileWriterThreadPool {
 	private final Map<String, Integer> maxPartCountMap;
 	private final Map<String, AtomicInteger> currentPartCountMap;
 	private final AmazonS3 amazonS3;
-	private final ExecutorService executorService;
+	private final ThreadPoolExecutor executorService;
 	private final FileMetadataRepository fileMetadataRepository;
 	public final ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(FILE_WRITER_QUEUE_SIZE);
 
@@ -54,6 +53,7 @@ public class FileWriterThreadPool {
 			workQueue,
 			new CustomS3BlockingQueuePolicy()
 		);
+		this.executorService.prestartAllCoreThreads();
 		this.fileMetadataRepository = fileMetadataRepository;
 		log.info("file writer queue size: {}", FILE_WRITER_QUEUE_SIZE);
 		// log.info("initial thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
