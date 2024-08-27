@@ -45,6 +45,7 @@ server:
       min-spare: 10
       max: 40
     accept-count: 100
+    max-connections: 40
 
 share:
   server-domain: localhost:8080

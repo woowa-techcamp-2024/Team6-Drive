@@ -2,6 +2,7 @@ package com.woowacamp.storage.domain.file.controller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -92,6 +93,7 @@ public class MultipartFileController {
 		long usedMemory = totalMemory - freeMemory;
 		log.info("new request, used mem: {}, free mem: {}, total mem: {}, max mem: {}", usedMemory, freeMemory,
 			totalMemory, maxMemory);
+		log.info("Active thread count: {}", ManagementFactory.getThreadMXBean().getThreadCount());
 		String boundary = "--" + extractBoundary(request.getContentType());
 		String finalBoundary = boundary + "--";
 
@@ -107,7 +109,7 @@ public class MultipartFileController {
 	 */
 	private void processMultipartData(InputStream inputStream, UploadContext context) throws Exception {
 		byte[] buffer = new byte[bufferSize];
-		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream(INITIAL_CAPACITY);
+		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream(lineBufferMaxSize);
 		ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream(INITIAL_CAPACITY);
 		PartContext partContext = new PartContext();
 		UploadState state = new UploadState();
