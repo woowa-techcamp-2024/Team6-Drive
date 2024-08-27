@@ -60,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 public class MultipartFileController {
 
+	public static final int INITIAL_CAPACITY = 5 * 1024 * 1024 + 1024 * 600;
 	private final AmazonS3 amazonS3;
 	private final S3FileService s3FileService;
 	private final FileWriterThreadPool fileWriterThreadPool;
@@ -106,8 +107,8 @@ public class MultipartFileController {
 	 */
 	private void processMultipartData(InputStream inputStream, UploadContext context) throws Exception {
 		byte[] buffer = new byte[bufferSize];
-		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream();
-		ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream();
+		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream(INITIAL_CAPACITY);
+		ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream(INITIAL_CAPACITY);
 		PartContext partContext = new PartContext();
 		UploadState state = new UploadState();
 
