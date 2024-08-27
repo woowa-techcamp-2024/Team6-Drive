@@ -36,17 +36,6 @@
             margin-bottom: 5px;
         }
 
-        /*.folder > span::before {*/
-        /*    content: "📁 ";*/
-        /*}*/
-
-        /*.file::before {*/
-        /*    content: "📄 ";*/
-        /*}*/
-        /*.folder.open > span::before {*/
-        /*    content: "📂 ";*/
-        /*}*/
-
         .folder > ul {
             display: none;
         }
@@ -206,6 +195,21 @@
     </div>
 </div>
 
+<div id="createFolderModal" class="thumbnail-modal">
+    <div class="thumbnail-content">
+        <span class="close">&times;</span>
+        <h3>폴더 생성</h3>
+        <form id="createFolderForm" onsubmit="createFolder()">
+            <label for="createFolderUserId"> 유저 id</label>
+            <input id="createFolderUserId"></br>
+            <input type="hidden" id="parentFolderId">
+            <label for="folderName"> 이름 </label>
+            <input id="folderName"></br>
+            <button type="submit">만들기</button>
+        </form>
+    </div>
+</div>
+
 
 <script>
     function createTree(data) {
@@ -294,6 +298,12 @@
             deleteFolderBtn.addEventListener('click', () => deleteFolder(node.id));
             li.appendChild(deleteFolderBtn);
 
+            const createFolderBtn = document.createElement('button');
+            createFolderBtn.textContent = '폴더 생성';
+            createFolderBtn.classList.add('btn');
+            createFolderBtn.addEventListener('click', () => openCreateFolderForm(node.id));
+            li.appendChild(createFolderBtn);
+
         } else {
             li.classList.add('file');
             if (node.thumbnailUUID) {
@@ -333,6 +343,11 @@
 
     function openMoveForm() {
         document.getElementById('moveModal').style.display = 'block';
+    }
+
+    function openCreateFolderForm(parentFolderId) {
+        document.getElementById('createFolderModal').style.display = 'block';
+        document.getElementById('parentFolderId').value = parentFolderId
     }
 
     function createUploadForm(folderId) {
@@ -461,6 +476,31 @@
         } else {
             url = `/api/v1/folders/${sourceId}`
         }
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+            });
+    }
+
+    function createFolder() {
+        const createFolderUserId = document.getElementById('createFolderUserId').value;
+        const folderName = document.getElementById('folderName').value;
+        const parentFolderId = document.getElementById('parentFolderId').value;
+
+        let method = 'POST';
+        let requestData = {
+            userId: parseInt(createFolderUserId),
+            uploadFolderName: folderName,
+            parentFolderId: parseInt(parentFolderId)
+        };
+
+        let url = '/api/v1/folders'
 
         fetch(url, {
             method: method,
