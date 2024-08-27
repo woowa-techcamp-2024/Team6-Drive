@@ -64,7 +64,7 @@ public class FileWriterThreadPool {
 			fileMetadataRepository.deleteByUuidFileName(currentFileName);
 			throw ErrorCode.FILE_UPLOAD_FAILED.baseException();
 		}
-		log.info("current queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
+		log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
 		executorService.execute(() -> {
 			log.info("currentThread: {}, partNumber: {}", Thread.currentThread().getId(), partNumber);
 			uploadPart(initResponse.getUploadId(), currentFileName, partNumber, contentBuffer, bufferLength, partETags);
