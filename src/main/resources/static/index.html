@@ -68,7 +68,7 @@
             display: none;
         }
 
-        .upload-form label, .upload-form button, .thumbnail-btn, .download-btn, .delete-btn {
+        .upload-form label, .upload-form button, .thumbnail-btn, .download-btn, .delete-btn, .btn {
             padding: 5px 10px;
             background-color: #f0f0f0;
             border: 1px solid #ddd;
@@ -159,7 +159,7 @@
 </form>
 
 <ul id="tree" class="tree"></ul>
-<button onClick="openMoveForm()"> 폴더/파일 이동</button>
+<button class="btn" onClick="openMoveForm()"> 폴더/파일 이동</button>
 
 <div id="thumbnailModal" class="thumbnail-modal">
     <div class="thumbnail-content">
@@ -293,6 +293,7 @@
             deleteFolderBtn.classList.add('delete-btn');
             deleteFolderBtn.addEventListener('click', () => deleteFolder(node.id));
             li.appendChild(deleteFolderBtn);
+
         } else {
             li.classList.add('file');
             if (node.thumbnailUUID) {
@@ -317,6 +318,7 @@
         const shareFileBtn = document.createElement('button');
         shareFileBtn.textContent = '공유';
         shareFileBtn.classList.add('share-btn');
+        shareFileBtn.classList.add('btn');
         shareFileBtn.addEventListener('click', () => openShareForm(node.id, node.isFolder));
         li.appendChild(shareFileBtn);
 
