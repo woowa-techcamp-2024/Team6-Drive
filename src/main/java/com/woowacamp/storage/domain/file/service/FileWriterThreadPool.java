@@ -67,7 +67,8 @@ public class FileWriterThreadPool {
 		log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
 		log.info("current queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
 		executorService.execute(() -> {
-			log.info("currentThread: {}, partNumber: {}", Thread.currentThread().getId(), partNumber);
+			log.info("current file: {}, currentThread: {}, partNumber: {}", currentFileName,
+				Thread.currentThread().getId(), partNumber);
 			uploadPart(initResponse.getUploadId(), currentFileName, partNumber, contentBuffer, bufferLength, partETags);
 			AtomicInteger currentConsumeCount = currentPartCountMap.get(currentFileName);
 			if (currentConsumeCount != null) {
