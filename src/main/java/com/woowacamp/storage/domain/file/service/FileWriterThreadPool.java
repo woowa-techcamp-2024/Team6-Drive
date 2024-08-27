@@ -64,11 +64,13 @@ public class FileWriterThreadPool {
 			fileMetadataRepository.deleteByUuidFileName(currentFileName);
 			throw ErrorCode.FILE_UPLOAD_FAILED.baseException();
 		}
-		log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
-		log.info("current queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
+		// log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
+		// log.info("current queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
 		executorService.execute(() -> {
 			log.info("current file: {}, currentThread: {}, partNumber: {}", currentFileName,
 				Thread.currentThread().getId(), partNumber);
+			log.info("current thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
+			log.info("current queue size: {}", ((ThreadPoolExecutor)executorService).getQueue().size());
 			uploadPart(initResponse.getUploadId(), currentFileName, partNumber, contentBuffer, bufferLength, partETags);
 			AtomicInteger currentConsumeCount = currentPartCountMap.get(currentFileName);
 			if (currentConsumeCount != null) {
