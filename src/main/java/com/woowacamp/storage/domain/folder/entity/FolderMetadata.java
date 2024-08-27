@@ -108,9 +108,6 @@ public class FolderMetadata {
 	}
 
 	public void updateShareStatus(PermissionType permissionType, LocalDateTime sharingExpiredAt) {
-		if (permissionType == null || permissionType.equals(PermissionType.NONE)) {
-			throw new IllegalArgumentException("잘못된 공유 권한 수정 입니다.");
-		}
 		this.permissionType = permissionType;
 		this.sharingExpiredAt = sharingExpiredAt;
 	}
