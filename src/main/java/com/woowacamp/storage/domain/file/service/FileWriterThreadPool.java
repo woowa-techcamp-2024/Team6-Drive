@@ -53,7 +53,7 @@ public class FileWriterThreadPool {
 			workQueue,
 			new CustomS3BlockingQueuePolicy()
 		);
-		this.executorService.prestartAllCoreThreads();
+		// this.executorService.prestartAllCoreThreads();
 		this.fileMetadataRepository = fileMetadataRepository;
 		log.info("file writer queue size: {}", FILE_WRITER_QUEUE_SIZE);
 		// log.info("initial thread count: {}", ((ThreadPoolExecutor)executorService).getActiveCount());
