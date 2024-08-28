@@ -8,8 +8,8 @@ spring:
       on-profile: local
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-#    hikari:
-#      maximum-pool-size: 20
+    hikari:
+      maximum-pool-size: 50
   jpa:
     hibernate:
       ddl-auto: none
