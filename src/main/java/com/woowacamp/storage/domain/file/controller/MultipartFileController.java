@@ -129,6 +129,8 @@ public class MultipartFileController {
 			fileMetadataRepository.updateUploadStatusById(context.getFileMetadata().metadataId());
 		} catch (AmazonS3Exception e) {
 			log.error("[AmazonS3Exception] 입력 예외로 완성되지 않은 S3 파일 제거 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
+		} catch (Exception e) {
+			log.error("[Exception] 예상치 못한 예외가 발생했습니다: {}, {}", e.getCause(), e.getMessage());
 		}
 	}
 
