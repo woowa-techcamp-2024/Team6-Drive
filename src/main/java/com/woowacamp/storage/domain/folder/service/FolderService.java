@@ -362,9 +362,7 @@ public class FolderService {
 			List<FolderMetadata> childFolder = folderMetadataRepository.findByParentFolderIdForUpdate(currentFolderId);
 
 			// 다음 연산을 위해 Queue 에 offer
-			childFolder.stream().forEach(folder -> {
-				folderIdQueue.offer(folder.getId());
-			});
+			childFolder.stream().forEach(folder -> folderIdQueue.offer(folder.getId()));
 		}
 	}
 }

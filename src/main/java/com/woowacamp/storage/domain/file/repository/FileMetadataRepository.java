@@ -67,9 +67,9 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 
 	@Modifying
 	@Query(value = """
-			select f from FileMetadata f
-			where f.parentFolderId = :orphanParentId
-		""")
+			select * from file_metadata f
+			where f.parent_folder_id = :orphanParentId limit 50;
+		""", nativeQuery = true)
 	List<FileMetadata> findOrphanFiles(@Param("orphanParentId") int orphanParentId);
 
 	boolean existsByParentFolderIdAndUploadStatus(Long parentFolderId, UploadStatus uploadStatus);
@@ -100,4 +100,6 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
 			where f.id = :fileId
 		""")
 	Optional<FileMetadata> findByIdForShare(@Param("fileId") long fileId);
+
+	List<FileMetadata> findByOwnerId(Long ownerId);
 }

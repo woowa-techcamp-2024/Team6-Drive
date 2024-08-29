@@ -2,24 +2,14 @@ package com.woowacamp.storage.domain.file.controller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,43 +18,36 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.woowacamp.storage.domain.file.dto.FileDataDto;
 import com.woowacamp.storage.domain.file.dto.FileMetadataDto;
 import com.woowacamp.storage.domain.file.dto.FormMetadataDto;
 import com.woowacamp.storage.domain.file.dto.PartContext;
 import com.woowacamp.storage.domain.file.dto.UploadContext;
 import com.woowacamp.storage.domain.file.dto.UploadState;
-import com.woowacamp.storage.domain.file.entity.FileMetadata;
 import com.woowacamp.storage.domain.file.repository.FileMetadataRepository;
 import com.woowacamp.storage.domain.file.service.FileService;
-import com.woowacamp.storage.domain.file.service.FileWriterThreadPool;
 import com.woowacamp.storage.domain.file.service.S3FileService;
+import com.woowacamp.storage.domain.file.service.SyncFileService;
 import com.woowacamp.storage.domain.file.service.ThumbnailWriterThreadPool;
-import com.woowacamp.storage.global.annotation.CheckField;
-import com.woowacamp.storage.global.annotation.RequestType;
 import com.woowacamp.storage.global.aop.PermissionFieldsDto;
 import com.woowacamp.storage.global.aop.PermissionHandler;
-import com.woowacamp.storage.global.aop.type.FieldType;
 import com.woowacamp.storage.global.aop.type.FileType;
 import com.woowacamp.storage.global.constant.PermissionType;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/files")
+@RequestMapping("/api/v2/files")
 @Slf4j
 @Validated
-public class MultipartFileController {
+public class SyncFileControllerV2 {
 
-	public static final int INITIAL_CAPACITY = 5 * 1024 * 1024 + 1024 * 600;
 	private final AmazonS3 amazonS3;
 	private final S3FileService s3FileService;
-	private final FileWriterThreadPool fileWriterThreadPool;
+	private final SyncFileService syncFileService;
 	private final FileMetadataRepository fileMetadataRepository;
 	private final FileService fileService;
 	private final ThumbnailWriterThreadPool thumbnailWriterThreadPool;
@@ -86,14 +69,6 @@ public class MultipartFileController {
 	@ResponseStatus(HttpStatus.CREATED)
 	@PostMapping
 	public void handleFileUpload(HttpServletRequest request) throws Exception {
-		Runtime runtime = Runtime.getRuntime();
-		long totalMemory = runtime.totalMemory();
-		long freeMemory = runtime.freeMemory();
-		long maxMemory = runtime.maxMemory();
-		long usedMemory = totalMemory - freeMemory;
-		log.info("new request, used mem: {}, free mem: {}, total mem: {}, max mem: {}", usedMemory, freeMemory,
-			totalMemory, maxMemory);
-		log.info("Active thread count: {}", ManagementFactory.getThreadMXBean().getThreadCount());
 		String boundary = "--" + extractBoundary(request.getContentType());
 		String finalBoundary = boundary + "--";
 
@@ -109,8 +84,8 @@ public class MultipartFileController {
 	 */
 	private void processMultipartData(InputStream inputStream, UploadContext context) throws Exception {
 		byte[] buffer = new byte[bufferSize];
-		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream(lineBufferMaxSize);
-		ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream(INITIAL_CAPACITY);
+		ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream();
+		ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream();
 		PartContext partContext = new PartContext();
 		UploadState state = new UploadState();
 
@@ -129,8 +104,13 @@ public class MultipartFileController {
 			fileMetadataRepository.updateUploadStatusById(context.getFileMetadata().metadataId());
 		} catch (AmazonS3Exception e) {
 			log.error("[AmazonS3Exception] 입력 예외로 완성되지 않은 S3 파일 제거 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
-		} catch (Exception e) {
-			log.error("[Exception] 예상치 못한 예외가 발생했습니다: {}, {}", e.getCause(), e.getMessage());
+		} finally {
+			if (context.getPis() != null) {
+				context.getPis().close();
+			}
+			if (context.getPos() != null) {
+				context.getPos().close();
+			}
 		}
 	}
 
@@ -263,7 +243,6 @@ public class MultipartFileController {
 	 * header를 읽은 후, file type이라면 S3에 part upload를 알려주는 initiate request 입니다.
 	 */
 	private InitiateMultipartUploadResult initializeFileUpload(String fileName, String contentType) {
-		fileWriterThreadPool.initializePartCount(fileName);
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentType(contentType);
 		InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(bucketName,
@@ -291,7 +270,7 @@ public class MultipartFileController {
 		partContext.plusPartCount();
 		state.addPartNumber();
 		state.addFileSize(contentBuffer.size());
-		fileWriterThreadPool.produce(state.getInitResponse(), partContext.getUploadFileName(), state.getPartNumber(),
+		syncFileService.produce(state.getInitResponse(), partContext.getUploadFileName(), state.getPartNumber(),
 			contentBuffer.toByteArray(), contentBuffer.size(),
 			state.getPartETagsMap().get(partContext.getUploadFileName()));
 		contentBuffer.reset();
@@ -319,7 +298,8 @@ public class MultipartFileController {
 	 */
 	private void finishFileUpload(ByteArrayOutputStream contentBuffer, UploadState state, PartContext partContext) {
 		uploadLeftOver(contentBuffer, state, partContext);
-		fileWriterThreadPool.finishFileUpload(partContext);
+		syncFileService.finishFileUpload(state.getInitResponse(), partContext.getUploadFileName(),
+			state.getPartETagsMap().get(partContext.getUploadFileName()));
 	}
 
 	/**
@@ -333,7 +313,7 @@ public class MultipartFileController {
 		state.addPartNumber();
 		state.addFileSize(contentBuffer.size() - 2);
 		log.info("[Last Upload Ended] file total size = {}", state.getFileSize());
-		fileWriterThreadPool.produce(state.getInitResponse(), partContext.getUploadFileName(), state.getPartNumber(),
+		syncFileService.produce(state.getInitResponse(), partContext.getUploadFileName(), state.getPartNumber(),
 			contentBuffer.toByteArray(), contentBuffer.size() - 2,
 			state.getPartETagsMap().get(partContext.getUploadFileName()));
 	}
@@ -365,39 +345,6 @@ public class MultipartFileController {
 			}
 		}
 		return null;
-	}
-
-	@RequestType(permission = PermissionType.READ, fileType = FileType.FILE)
-	@GetMapping("/download/{fileId}")
-	@Validated
-	ResponseEntity<InputStreamResource> download(@CheckField(FieldType.FILE_ID) @PathVariable Long fileId,
-		@CheckField(FieldType.USER_ID) @Positive(message = "올바른 입력값이 아닙니다.") @RequestParam("userId") Long userId,
-		@RequestParam("isThumbnail") boolean isThumbnail) {
-
-		FileMetadata fileMetadata = fileService.getFileMetadataBy(fileId, userId);
-		FileDataDto fileDataDto;
-		if (isThumbnail) {
-			fileDataDto = s3FileService.downloadByS3(fileId, bucketName, fileMetadata.getThumbnailUUID());
-		} else {
-			fileDataDto = s3FileService.downloadByS3(fileId, bucketName, fileMetadata.getUuidFileName());
-		}
-		HttpHeaders headers = new HttpHeaders();
-		// HTTP 응답 헤더에 Content-Type 설정
-		String fileType = fileMetadata.getFileType();
-		if (fileType == null) {
-			fileType = "application/octet-stream";
-		}
-		String fileName = fileDataDto.fileMetadataDto().uploadFileName();
-		String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
-
-		headers.add(HttpHeaders.CONTENT_TYPE, fileType);
-		headers.add(HttpHeaders.CONTENT_DISPOSITION,
-			"attachment; filename=\"" + encodedFileName + "\"; filename*=UTF-8''" + encodedFileName);
-
-		return ResponseEntity.ok()
-			.headers(headers)
-			.contentType(MediaType.APPLICATION_OCTET_STREAM)
-			.body(new InputStreamResource(fileDataDto.fileInputStream()));
 	}
 
 }

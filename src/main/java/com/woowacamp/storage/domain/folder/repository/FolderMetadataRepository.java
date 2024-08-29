@@ -1,5 +1,6 @@
 package com.woowacamp.storage.domain.folder.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,4 +73,12 @@ public interface FolderMetadataRepository extends JpaRepository<FolderMetadata, 
 			where f.id = :folderId
 		""")
 	Optional<FolderMetadata> findByIdForShare(@Param("folderId") Long folderId);
+
+	List<FolderMetadata> findByOwnerId(Long ownerId);
+
+	@Modifying
+	@Query("""
+			update FolderMetadata f set f.size = f.size + :fileSize, f.updatedAt = :now where f.id = :id
+		""")
+	void updateFolderInfo(@Param("fileSize") long fileSize, @Param("now") LocalDateTime now, @Param("id") Long id);
 }

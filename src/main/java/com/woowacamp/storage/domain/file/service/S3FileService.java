@@ -60,7 +60,10 @@ public class S3FileService {
 		FolderMetadata parentFolderMetadata = validateRequest(formMetadataDto, partContext, user, fileName, fileType);
 
 		String uuidFileName = getUuidFileName();
-		String uuidThumbnail = "thumb_" + uuidFileName;
+		String uuidThumbnail = null;
+		if (partContext.getCurrentContentType().startsWith("image/")) {
+			uuidThumbnail = "thumb_" + uuidFileName;
+		}
 
 		// 1차 메타데이터 생성
 		// TODO: 공유 기능이 생길 때, creatorId, ownerId 따로
@@ -113,8 +116,7 @@ public class S3FileService {
 	 * validateParentFolder를 먼저 호출해야 부모 폴더에 락이 걸려서 같은 파일 이름으로 동시에 써지지 않는다.
 	 */
 	private FolderMetadata validateRequest(FormMetadataDto formMetadataDto, PartContext partContext, User user,
-		String fileName,
-		String fileType) {
+		String fileName, String fileType) {
 		validateFileSize(formMetadataDto.getFileSize(), user.getRootFolderId());
 		FolderMetadata parentFolderMetadata = validateParentFolder(formMetadataDto.getParentFolderId(),
 			formMetadataDto.getUserId());
@@ -206,7 +208,13 @@ public class S3FileService {
 
 	public FileDataDto downloadByS3(Long fileId, String bucketName, String uuidFileName) {
 		FileMetadata fileMetadata = fileMetadataRepository.findById(fileId).orElseThrow(FILE_NOT_FOUND::baseException);
-		S3Object s3Object = amazonS3.getObject(new GetObjectRequest(bucketName, uuidFileName));
+		S3Object s3Object;
+		try {
+			s3Object = amazonS3.getObject(new GetObjectRequest(bucketName, uuidFileName));
+		} catch (Exception e) {
+			throw FILE_NOT_FOUND.baseException();
+		}
+
 		return new FileDataDto(FileMetadataDto.of(fileMetadata), s3Object.getObjectContent());
 	}
 }

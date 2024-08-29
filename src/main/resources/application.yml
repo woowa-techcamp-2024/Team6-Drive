@@ -8,14 +8,17 @@ spring:
       on-profile: local
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
   jpa:
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: true
+      ddl-auto: none
+
+#        properties:
+#          hibernate:
+#            format_sql: true
     open-in-view: false
-    show-sql: true
+#      show-sql: true
   servlet:
     multipart:
       enabled: false
@@ -36,5 +39,17 @@ management:
       export:
         enabled: true
 
+#server:
+#  tomcat:
+#    threads:
+#      min-spare: 50
+#      max: 20
+#    accept-count: 100
+#    max-connections: 100
+
 share:
   server-domain: localhost:8080
+
+logging:
+  level:
+    root: INFO

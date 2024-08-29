@@ -24,8 +24,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "file_metadata", indexes = {
 	@Index(name = "file_idx_parent_folder_id_size", columnList = "parent_folder_id, created_at"),
-	@Index(name = "file_idx_parent_folder_id_created_at", columnList = "parent_folder_id, file_size")
-})
+	@Index(name = "file_idx_parent_folder_id_created_at", columnList = "parent_folder_id, file_size"),
+	@Index(name = "file_idx_upload_status", columnList = "upload_status")})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class FileMetadata {
@@ -79,8 +79,7 @@ public class FileMetadata {
 	@NotNull
 	private UploadStatus uploadStatus;
 
-	@Column(name = "thumbnail_file_name", columnDefinition = "VARCHAR(100) NOT NULL unique")
-	@NotNull
+	@Column(name = "thumbnail_file_name", columnDefinition = "VARCHAR(100) unique")
 	private String thumbnailUUID;
 
 	@Column(name = "sharing_expired_at", columnDefinition = "TIMESTAMP NOT NULL")
@@ -93,23 +92,10 @@ public class FileMetadata {
 	private PermissionType permissionType;
 
 	@Builder
-	public FileMetadata(
-		Long id,
-		Long rootId,
-		Long creatorId,
-		Long ownerId,
-		String fileType,
-		LocalDateTime createdAt,
-		LocalDateTime updatedAt,
-		Long parentFolderId,
-		Long fileSize,
-		String uploadFileName,
-		String uuidFileName,
-		UploadStatus uploadStatus,
-		String thumbnailUUID,
-		LocalDateTime sharingExpiredAt,
-		PermissionType permissionType
-	) {
+	public FileMetadata(Long id, Long rootId, Long creatorId, Long ownerId, String fileType, LocalDateTime createdAt,
+		LocalDateTime updatedAt, Long parentFolderId, Long fileSize, String uploadFileName, String uuidFileName,
+		UploadStatus uploadStatus, String thumbnailUUID, LocalDateTime sharingExpiredAt,
+		PermissionType permissionType) {
 		this.id = id;
 		this.rootId = rootId;
 		this.creatorId = creatorId;
@@ -148,9 +134,6 @@ public class FileMetadata {
 	}
 
 	public void updateShareStatus(PermissionType permissionType, LocalDateTime sharingExpiredAt) {
-		if (permissionType == null || permissionType.equals(PermissionType.NONE)) {
-			throw new IllegalArgumentException("잘못된 공유 권한 수정 입니다.");
-		}
 		this.permissionType = permissionType;
 		this.sharingExpiredAt = sharingExpiredAt;
 	}

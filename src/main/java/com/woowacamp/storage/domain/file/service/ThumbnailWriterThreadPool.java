@@ -77,7 +77,7 @@ public class ThumbnailWriterThreadPool {
 				int height = reader.getHeight(0);
 				double rate = (double)width / height;
 
-				int thumbnailSize = THUMBNAIL_SIZE / 3;
+				int thumbnailSize = Math.min(THUMBNAIL_SIZE / 3, width * height);
 				int thumbnailHeight = (int)Math.sqrt(thumbnailSize / rate);
 				int thumbnailWidth = (int)(thumbnailHeight * rate);
 

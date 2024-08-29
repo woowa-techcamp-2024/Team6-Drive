@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File and Folder Tree View</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tree, .tree ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+
+        .tree li {
+            margin: 10px 0;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .tree li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .folder > span, .file > span {
+            cursor: pointer;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+
+        .folder > ul {
+            display: none;
+        }
+
+        .folder.open > ul {
+            display: block;
+        }
+
+        #userIdForm {
+            margin-bottom: 20px;
+        }
+
+        .upload-form {
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .upload-form input[type="file"] {
+            display: none;
+        }
+
+        .upload-form label, .upload-form button, .thumbnail-btn, .download-btn, .delete-btn, .btn {
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .upload-form label:hover, .upload-form button:hover, .thumbnail-btn:hover, .download-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .delete-btn {
+            background-color: #ffcccc;
+        }
+
+        .delete-btn:hover {
+            background-color: #ffaaaa;
+        }
+
+        .file-name {
+            margin-left: 10px;
+            font-style: italic;
+        }
+
+        .thumbnail-modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .thumbnail-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .item-name {
+            font-weight: bold;
+            color: #0066cc;
+        }
+
+        .item-size {
+            color: #666;
+            font-style: italic;
+        }
+
+        .item-id {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .file > .item-name {
+            color: #009933;
+        }
+    </style>
+</head>
+<body>
+<form id="userIdForm">
+    <label for="userId">Enter User ID:</label>
+    <input type="number" id="userId" name="userId" required>
+    <button type="submit">Load Tree</button>
+</form>
+
+<ul id="tree" class="tree"></ul>
+<button class="btn" onClick="openMoveForm()"> 폴더/파일 이동</button>
+
+<div id="thumbnailModal" class="thumbnail-modal">
+    <div class="thumbnail-content">
+        <span class="close">&times;</span>
+        <img id="thumbnailImage" src="" alt="Thumbnail" style="width:100%;">
+    </div>
+</div>
+
+<div id="shareModal" class="thumbnail-modal">
+    <div class="thumbnail-content">
+        <span class="close">&times;</span>
+        <h3>파일/폴더 공유 설정</h3>
+        <form id="shareForm" onsubmit="shareFileFolder()">
+            <input type="hidden" id="targetId" name="targetId">
+            <input type="hidden" id="isFile" name="isFile">
+            <label for="permission">권한 선택:</label>
+            <select id="permission" name="permission">
+                <option value="read">Read</option>
+                <option value="write">Write</option>
+                <option value="none">공유 취소</option>
+            </select>
+            <button type="submit">공유 하기</button>
+        </form>
+    </div>
+</div>
+
+<div id="moveModal" class="thumbnail-modal">
+    <div class="thumbnail-content">
+        <span class="close">&times;</span>
+        <h3>파일/폴더 공유 설정</h3>
+        <form id="moveForm" onsubmit="moveFileFolder()">
+            <label for="sourceId"> 이동할 폴더/파일 id</label>
+            <input id="sourceId"></br>
+            <label for="requestUserId"> 유저 id</label>
+            <input id="requestUserId"></br>
+            <label for="targetFolderId"> 목적지 파일 id</label>
+            <input id="targetFolderId"></br>
+            <select id="isTargetFile">
+                <option value="true">파일</option>
+                <option value="false">폴더</option>
+            </select>
+            <button type="submit">이동 하기</button>
+        </form>
+    </div>
+</div>
+
+<div id="createFolderModal" class="thumbnail-modal">
+    <div class="thumbnail-content">
+        <span class="close">&times;</span>
+        <h3>폴더 생성</h3>
+        <form id="createFolderForm" onsubmit="createFolder()">
+            <label for="createFolderUserId"> 유저 id</label>
+            <input id="createFolderUserId"></br>
+            <input type="hidden" id="parentFolderId">
+            <label for="folderName"> 이름 </label>
+            <input id="folderName"></br>
+            <button type="submit">만들기</button>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    function createTree(data) {
+        const tree = {};
+        const rootId = data.folders.find(f => f.parentFolderId === null).id;
+
+        data.folders.forEach(folder => {
+            tree[folder.id] = {
+                id: folder.id,
+                name: folder.uploadFolderName,
+                size: folder.size,
+                isFolder: true,
+                share: folder.sharingExpired ? '공유 X' : folder.permissionType,
+                children: {
+                    folders: [],
+                    files: []
+                }
+            };
+        });
+
+        data.files.forEach(file => {
+            if (tree[file.parentFolderId]) {
+                tree[file.parentFolderId].children.files.push({
+                    id: file.id,
+                    name: file.uploadFileName,
+                    size: file.fileSize,
+                    isFolder: false,
+                    thumbnailUUID: file.thumbnailUUID,
+                    share: file.sharingExpired ? '공유 X' : file.permissionType,
+                });
+            }
+        });
+
+        data.folders.forEach(folder => {
+            if (folder.parentFolderId !== null && tree[folder.parentFolderId]) {
+                tree[folder.parentFolderId].children.folders.push(tree[folder.id]);
+            }
+        });
+
+        return tree[rootId];
+    }
+
+    function renderTree(node) {
+        const li = document.createElement('li');
+        if (node.isFolder) {
+            li.innerHTML = `
+            <span class="item-name">📁 ${node.name}</span>
+            <span class="item-size">(${formatSize(node.size)})</span>
+            <span class="item-id">[ID: ${node.id}]</span>
+            <span class="item-share">[${node.share}]</span>
+        `;
+        } else {
+            li.innerHTML = `
+            <span class="item-name">📄 ${node.name}</span>
+            <span class="item-size">(${formatSize(node.size)})</span>
+            <span class="item-id">[ID: ${node.id}]</span>
+            <span class="item-share">[${node.share}]</span>
+        `;
+        }
+
+
+        if (node.isFolder) {
+            li.classList.add('folder');
+            const ul = document.createElement('ul');
+
+            const uploadForm = createUploadForm(node.id);
+            li.appendChild(uploadForm);
+
+            node.children.folders.forEach(childFolder => {
+                ul.appendChild(renderTree(childFolder));
+            });
+
+            node.children.files.forEach(childFile => {
+                ul.appendChild(renderTree(childFile));
+            });
+
+            li.appendChild(ul);
+
+            li.querySelector('.item-name').addEventListener('click', () => {
+                li.classList.toggle('open');
+            });
+
+            const deleteFolderBtn = document.createElement('button');
+            deleteFolderBtn.textContent = '폴더 삭제';
+            deleteFolderBtn.classList.add('delete-btn');
+            deleteFolderBtn.addEventListener('click', () => deleteFolder(node.id));
+            li.appendChild(deleteFolderBtn);
+
+            const createFolderBtn = document.createElement('button');
+            createFolderBtn.textContent = '폴더 생성';
+            createFolderBtn.classList.add('btn');
+            createFolderBtn.addEventListener('click', () => openCreateFolderForm(node.id));
+            li.appendChild(createFolderBtn);
+
+        } else {
+            li.classList.add('file');
+            if (node.thumbnailUUID) {
+                const thumbnailBtn = document.createElement('button');
+                thumbnailBtn.textContent = '썸네일 보기';
+                thumbnailBtn.classList.add('thumbnail-btn');
+                thumbnailBtn.addEventListener('click', () => showThumbnail(node.id));
+                li.appendChild(thumbnailBtn);
+            }
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = '파일 다운로드';
+            downloadBtn.classList.add('download-btn');
+            downloadBtn.addEventListener('click', () => downloadFile(node.id));
+            li.appendChild(downloadBtn);
+
+            const deleteFileBtn = document.createElement('button');
+            deleteFileBtn.textContent = '파일 삭제';
+            deleteFileBtn.classList.add('delete-btn');
+            deleteFileBtn.addEventListener('click', () => deleteFile(node.id));
+            li.appendChild(deleteFileBtn);
+        }
+        const shareFileBtn = document.createElement('button');
+        shareFileBtn.textContent = '공유';
+        shareFileBtn.classList.add('share-btn');
+        shareFileBtn.classList.add('btn');
+        shareFileBtn.addEventListener('click', () => openShareForm(node.id, node.isFolder));
+        li.appendChild(shareFileBtn);
+
+        return li;
+    }
+
+    function openShareForm(targetId, isFile) {
+        document.getElementById('targetId').value = targetId;
+        document.getElementById('isFile').value = isFile;
+        document.getElementById('shareModal').style.display = 'block';
+    }
+
+    function openMoveForm() {
+        document.getElementById('moveModal').style.display = 'block';
+    }
+
+    function openCreateFolderForm(parentFolderId) {
+        document.getElementById('createFolderModal').style.display = 'block';
+        document.getElementById('parentFolderId').value = parentFolderId
+    }
+
+    function createUploadForm(folderId) {
+        const form = document.createElement('form');
+        form.classList.add('upload-form');
+        form.innerHTML = `
+            <input type="file" id="file-${folderId}" name="f">
+            <label for="file-${folderId}">파일 업로드</label>
+            <span class="file-name"></span>
+            <button type="submit">확인</button>
+        `;
+
+        const fileInput = form.querySelector('input[type="file"]');
+        const fileNameSpan = form.querySelector('.file-name');
+
+        fileInput.addEventListener('change', function (event) {
+            if (this.files.length > 0) {
+                fileNameSpan.textContent = this.files[0].name;
+            } else {
+                fileNameSpan.textContent = '';
+            }
+        });
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const file = this.querySelector('input[type="file"]').files[0];
+            if (file) {
+                uploadFile(file, folderId);
+            }
+        });
+
+        return form;
+    }
+
+    function uploadFile(file, folderId) {
+        const userId = document.getElementById('userId').value;
+        const formData = new FormData();
+        formData.append('userId', userId);
+        formData.append('parentFolderId', folderId);
+        formData.append('fileSize', file.size);
+        formData.append('f', file);
+
+        fetch('/api/v1/files', {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => response.text())
+            .then(data => {
+                console.log('Upload successful:', data);
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('파일 업로드 중 오류가 발생했습니다.');
+            });
+    }
+
+    function showThumbnail(fileId) {
+        const userId = document.getElementById('userId').value;
+        const url = `/api/v1/files/download/${fileId}?userId=${userId}&isThumbnail=true`;
+
+        fetch(url)
+            .then(response => response.blob())
+            .then(blob => {
+                const imageUrl = URL.createObjectURL(blob);
+                const modal = document.getElementById('thumbnailModal');
+                const modalImg = document.getElementById('thumbnailImage');
+                modalImg.src = imageUrl;
+                modal.style.display = 'block';
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function downloadFile(fileId) {
+        const userId = document.getElementById('userId').value;
+        const url = `/api/v1/files/download/${fileId}?userId=${userId}&isThumbnail=false`;
+
+        window.open(url, '_blank');
+    }
+
+    function shareFileFolder() {
+        const userId = document.getElementById('userId').value;
+        const targetId = document.getElementById('targetId').value;
+        const isFile = !document.getElementById('isFile').value;
+        const permission = document.getElementById('permission').value;
+
+        let method = 'POST';
+        let requestData = {
+            userId: parseInt(userId),
+            isFile: isFile,
+            targetId: parseInt(targetId),
+        };
+
+        if (permission === 'none') {
+            method = 'DELETE';
+        } else {
+            requestData.permissionType = permission;
+        }
+
+        fetch('/api/v1/share', {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+            });
+    }
+
+    function moveFileFolder() {
+        const sourceId = document.getElementById('sourceId').value;
+        const requestUserId = document.getElementById('requestUserId').value;
+        const targetFolderId = document.getElementById('targetFolderId').value;
+        const isTargetFile = document.getElementById('isTargetFile').value;
+
+        let method = 'PATCH';
+        let requestData = {
+            userId: parseInt(requestUserId),
+            targetFolderId: parseInt(targetFolderId),
+        };
+        let url = '/api/v1/folders'
+
+        if (isTargetFile === 'true') {
+            url = `/api/v1/files/${sourceId}`
+        } else {
+            url = `/api/v1/folders/${sourceId}`
+        }
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+            });
+    }
+
+    function createFolder() {
+        const createFolderUserId = document.getElementById('createFolderUserId').value;
+        const folderName = document.getElementById('folderName').value;
+        const parentFolderId = document.getElementById('parentFolderId').value;
+
+        let method = 'POST';
+        let requestData = {
+            userId: parseInt(createFolderUserId),
+            uploadFolderName: folderName,
+            parentFolderId: parseInt(parentFolderId)
+        };
+
+        let url = '/api/v1/folders'
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+            });
+    }
+
+    function deleteFile(fileId) {
+        const userId = document.getElementById('userId').value;
+        const url = `/api/v1/files/${fileId}?userId=${userId}`;
+
+        if (confirm('정말로 이 파일을 삭제하시겠습니까?')) {
+            fetch(url, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('File deleted successfully');
+                        window.location.reload();
+                    } else {
+                        throw new Error('File deletion failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('파일 삭제 중 오류가 발생했습니다.');
+                });
+        }
+    }
+
+    function deleteFolder(folderId) {
+        const userId = document.getElementById('userId').value;
+        const url = `/api/v1/folders/${folderId}?userId=${userId}`;
+
+        if (confirm('정말로 이 폴더를 삭제하시겠습니까? 폴더 내의 모든 파일과 하위 폴더가 삭제됩니다.')) {
+            fetch(url, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Folder deleted successfully');
+                        window.location.reload();
+                    } else {
+                        throw new Error('Folder deletion failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('폴더 삭제 중 오류가 발생했습니다.');
+                });
+        }
+    }
+
+    function formatSize(size) {
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        let i = 0;
+        while (size >= 1024 && i < units.length - 1) {
+            size /= 1024;
+            i++;
+        }
+        return size.toFixed(2) + ' ' + units[i];
+    }
+
+    function loadTree(userId) {
+        fetch(`/api/v1/totals/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const root = createTree(data);
+                const treeElement = document.getElementById('tree');
+                treeElement.innerHTML = '';
+                treeElement.appendChild(renderTree(root));
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    document.getElementById('userIdForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const userId = document.getElementById('userId').value;
+        loadTree(userId);
+    });
+
+    window.onclick = function (event) {
+        const modal = document.getElementById('thumbnailModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    window.onload = function () {
+        const userId = document.getElementById('userId').value;
+        if (userId) {
+            loadTree(userId);
+        }
+    }
+
+    document.querySelectorAll('.close').forEach(function (closeButton) {
+        closeButton.onclick = function () {
+            const modal = this.closest('.thumbnail-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        };
+    });
+
+</script>
+</body>
+</html>
+
+
