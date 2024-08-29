@@ -1,0 +1,109 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - main
+      - hot-fix
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: set up jdk 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Create application-secret.yml
+        run: |
+          echo "${{ secrets.SECRET }}" > ./src/main/resources/application-secret.yml
+
+      - name: Build with Gradle
+        run: |
+          ls -l
+          which chmod
+          /usr/bin/chmod +x ./gradlew
+          ./gradlew clean build -x test
+
+      - name: transfer jar to ec2
+        env:
+          PRIVATE_KEY: ${{ secrets.KEY }}
+          HOST1: ${{ secrets.HOST1 }}
+          HOST2: ${{ secrets.HOST2 }}
+          HOST3: ${{ secrets.HOST3 }}
+          HOST4: ${{ secrets.HOST4 }}
+          HOST5: ${{ secrets.HOST5 }}
+          USER: ${{ secrets.USER }}
+        run: |
+          echo "${PRIVATE_KEY}" > private_key && /usr/bin/chmod 600 private_key
+          scp -o StrictHostKeyChecking=no -i private_key ./build/libs/*.jar ${USER}@${HOST1}:/home/ubuntu
+          scp -o StrictHostKeyChecking=no -i private_key ./build/libs/*.jar ${USER}@${HOST2}:/home/ubuntu
+          scp -o StrictHostKeyChecking=no -i private_key ./build/libs/*.jar ${USER}@${HOST3}:/home/ubuntu
+          scp -o StrictHostKeyChecking=no -i private_key ./build/libs/*.jar ${USER}@${HOST4}:/home/ubuntu
+          scp -o StrictHostKeyChecking=no -i private_key ./build/libs/*.jar ${USER}@${HOST5}:/home/ubuntu
+
+      - name: execute jar
+        env:
+          PRIVATE_KEY: ${{ secrets.KEY }}
+          HOST1: ${{ secrets.HOST1 }}
+        run: |
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST1} << EOF
+            cd /home/ubuntu
+            PID=\$(lsof -t -i:8080)
+            if [ ! -z "\$PID" ]; then
+              echo "Killing process on port 8080"
+              sudo kill -9 \$PID || echo "Failed to kill process"
+            else
+              echo "No process found on port 8080"
+            fi
+            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+          EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST2} << EOF
+            cd /home/ubuntu
+            PID=\$(lsof -t -i:8080)
+            if [ ! -z "\$PID" ]; then
+              echo "Killing process on port 8080"
+              sudo kill -9 \$PID || echo "Failed to kill process"
+            else
+              echo "No process found on port 8080"
+            fi
+            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+          EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST3} << EOF
+            cd /home/ubuntu
+            PID=\$(lsof -t -i:8080)
+            if [ ! -z "\$PID" ]; then
+              echo "Killing process on port 8080"
+              sudo kill -9 \$PID || echo "Failed to kill process"
+            else
+              echo "No process found on port 8080"
+            fi
+            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+          EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST4} << EOF
+            cd /home/ubuntu
+            PID=\$(lsof -t -i:8080)
+            if [ ! -z "\$PID" ]; then
+              echo "Killing process on port 8080"
+              sudo kill -9 \$PID || echo "Failed to kill process"
+            else
+              echo "No process found on port 8080"
+            fi
+            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+          EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST5} << EOF
+            cd /home/ubuntu
+            PID=\$(lsof -t -i:8080)
+            if [ ! -z "\$PID" ]; then
+              echo "Killing process on port 8080"
+              sudo kill -9 \$PID || echo "Failed to kill process"
+            else
+              echo "No process found on port 8080"
+            fi
+            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+          EOF
