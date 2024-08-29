@@ -63,20 +63,18 @@ public class FolderSearchUtil {
 		LocalDateTime now = LocalDateTime.now();
 		boolean isExistCommonAncestor = false;
 		for (var source : sourcePath) {
-			source.updateUpdatedAt(now);
 			if (source.equals(commonAncestor)) {
 				isExistCommonAncestor = true;
 			}
 			if (!isExistCommonAncestor) {
-				source.addSize(-fileSize);
+				folderMetadataRepository.updateFolderInfo(-fileSize, now, source.getId());
 			}
 		}
 		for (var target : targetPath) {
 			if (target.equals(commonAncestor)) {
 				break;
 			}
-			target.addSize(fileSize);
-			target.updateUpdatedAt(now);
+			folderMetadataRepository.updateFolderInfo(fileSize, now, target.getId());
 		}
 	}
 
