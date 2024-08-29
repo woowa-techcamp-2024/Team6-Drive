@@ -67,7 +67,7 @@ jobs:
       - name: execute jar2
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST1: ${{ secrets.HOST2 }}
+          HOST2: ${{ secrets.HOST2 }}
         run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST2} << EOF
             cd /home/ubuntu
@@ -84,7 +84,7 @@ jobs:
       - name: execute jar3
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST1: ${{ secrets.HOST3 }}
+          HOST3: ${{ secrets.HOST3 }}
         run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST3} << EOF
             cd /home/ubuntu
@@ -101,7 +101,7 @@ jobs:
       - name: execute jar4
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST1: ${{ secrets.HOST4 }}
+          HOST4: ${{ secrets.HOST4 }}
         run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST4} << EOF
             cd /home/ubuntu
@@ -118,7 +118,7 @@ jobs:
       - name: execute jar5
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST1: ${{ secrets.HOST5 }}
+          HOST5: ${{ secrets.HOST5 }}
         run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST5} << EOF
             cd /home/ubuntu
