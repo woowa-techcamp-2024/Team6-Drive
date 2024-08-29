@@ -47,6 +47,7 @@ import com.woowacamp.storage.global.aop.PermissionHandler;
 import com.woowacamp.storage.global.aop.type.FieldType;
 import com.woowacamp.storage.global.aop.type.FileType;
 import com.woowacamp.storage.global.constant.PermissionType;
+import com.woowacamp.storage.global.error.CustomException;
 import com.woowacamp.storage.global.error.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -129,8 +130,11 @@ public class MultipartFileController {
 			fileMetadataRepository.updateUploadStatusById(context.getFileMetadata().metadataId());
 		} catch (AmazonS3Exception e) {
 			log.error("[AmazonS3Exception] 입력 예외로 완성되지 않은 S3 파일 제거 중 예외 발생. ERROR MESSAGE = {}", e.getMessage());
+		} catch (CustomException e) {
+			throw e;
 		} catch (Exception e) {
 			log.error("[Exception] 예상치 못한 예외가 발생했습니다: {}, {}", e.getCause(), e.getMessage());
+			throw e;
 		}
 	}
 
