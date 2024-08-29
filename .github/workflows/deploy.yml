@@ -47,7 +47,7 @@ jobs:
           scp -o StrictHostKeyChecking=no -i private_key ./build/libs/*.jar ${USER}@${HOST4}:/home/ubuntu
           scp -o StrictHostKeyChecking=no -i private_key ./build/libs/*.jar ${USER}@${HOST5}:/home/ubuntu
 
-      - name: execute jar
+      - name: execute jar1
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
           HOST1: ${{ secrets.HOST1 }}
@@ -63,6 +63,12 @@ jobs:
             fi
             nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
+
+      - name: execute jar2
+        env:
+          PRIVATE_KEY: ${{ secrets.KEY }}
+          HOST1: ${{ secrets.HOST2 }}
+        run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST2} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
@@ -74,6 +80,12 @@ jobs:
             fi
             nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
+
+      - name: execute jar3
+        env:
+          PRIVATE_KEY: ${{ secrets.KEY }}
+          HOST1: ${{ secrets.HOST3 }}
+        run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST3} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
@@ -85,6 +97,12 @@ jobs:
             fi
             nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
+
+      - name: execute jar4
+        env:
+          PRIVATE_KEY: ${{ secrets.KEY }}
+          HOST1: ${{ secrets.HOST4 }}
+        run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST4} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
@@ -96,6 +114,12 @@ jobs:
             fi
             nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
+
+      - name: execute jar5
+        env:
+          PRIVATE_KEY: ${{ secrets.KEY }}
+          HOST1: ${{ secrets.HOST5 }}
+        run: |
           /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST5} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
