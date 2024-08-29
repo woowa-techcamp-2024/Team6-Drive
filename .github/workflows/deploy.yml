@@ -134,5 +134,5 @@ jobs:
             else
               echo "No process found on port 8080"
             fi
-            nohup java -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home//heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
