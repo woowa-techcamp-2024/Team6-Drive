@@ -50,9 +50,10 @@ jobs:
       - name: execute jar1
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST1: ${{ secrets.HOST1 }}
+          HOST: ${{ secrets.HOST1 }}
+          USER: ${{ secrets.USER }}
         run: |
-          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST1} << EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
             if [ ! -z "\$PID" ]; then
@@ -61,15 +62,16 @@ jobs:
             else
               echo "No process found on port 8080"
             fi
-            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+            nohup java -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
 
       - name: execute jar2
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST2: ${{ secrets.HOST2 }}
+          HOST: ${{ secrets.HOST2 }}
+          USER: ${{ secrets.USER }}
         run: |
-          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST2} << EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
             if [ ! -z "\$PID" ]; then
@@ -78,15 +80,16 @@ jobs:
             else
               echo "No process found on port 8080"
             fi
-            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+            nohup java -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
 
       - name: execute jar3
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST3: ${{ secrets.HOST3 }}
+          HOST: ${{ secrets.HOST3 }}
+          USER: ${{ secrets.USER }}
         run: |
-          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST3} << EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
             if [ ! -z "\$PID" ]; then
@@ -95,15 +98,16 @@ jobs:
             else
               echo "No process found on port 8080"
             fi
-            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+            nohup java -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
 
       - name: execute jar4
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST4: ${{ secrets.HOST4 }}
+          HOST: ${{ secrets.HOST4 }}
+          USER: ${{ secrets.USER }}
         run: |
-          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST4} << EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
             if [ ! -z "\$PID" ]; then
@@ -112,15 +116,16 @@ jobs:
             else
               echo "No process found on port 8080"
             fi
-            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+            nohup java -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
 
       - name: execute jar5
         env:
           PRIVATE_KEY: ${{ secrets.KEY }}
-          HOST5: ${{ secrets.HOST5 }}
+          HOST: ${{ secrets.HOST5 }}
+          USER: ${{ secrets.USER }}
         run: |
-          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST5} << EOF
+          /usr/bin/ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} << EOF
             cd /home/ubuntu
             PID=\$(lsof -t -i:8080)
             if [ ! -z "\$PID" ]; then
@@ -129,5 +134,5 @@ jobs:
             else
               echo "No process found on port 8080"
             fi
-            nohup java -Xmx1200m -XX:NativeMemoryTracking=summary -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/ubuntu/heapdump.hprof -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
+            nohup java -jar storage-0.0.1-SNAPSHOT.jar --spring.profiles.active=local > app.log 2>&1 &
           EOF
